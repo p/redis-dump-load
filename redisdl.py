@@ -39,7 +39,40 @@ def _reader(r):
             value = r.zrange(key, 0, -1, False, True)
         elif type == 'hash':
             value = r.hgetall(key)
+        else:
+            raise UnknownTypeError("Unknown key type: %s" % type)
         yield key, type, value
+
+def loads(s, host='localhost', port=6379, db=0):
+    r = redis.Redis(host=host, port=port, db=db)
+    table = json.loads(s)
+    for key in table:
+        item = table[key]
+        type = item['type']
+        value = item['value']
+        _writer(r, key, type, value)
+
+def load(fp, host='localhost', port=6379, db=0):
+    s = fp.read()
+    loads(s, host, port, db)
+
+def _writer(r, key, type, value):
+    r.delete(key)
+    if type == 'string':
+        r.set(key, value)
+    elif type == 'list':
+        for element in value:
+            r.lpush(key, element)
+    elif type == 'set':
+        for element in value:
+            r.sadd(key, element)
+    elif type == 'zset':
+        for element, score in value:
+            r.zadd(key, element, score)
+    elif type == 'hash':
+        r.hmset(key, value)
+    else:
+        raise UnknownTypeError("Unknown key type: %s" % type)
 
 if __name__ == '__main__':
     import optparse
