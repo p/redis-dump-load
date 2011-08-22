@@ -45,8 +45,11 @@ def _reader(r):
             raise UnknownTypeError("Unknown key type: %s" % type)
         yield key, type, value
 
-def loads(s, host='localhost', port=6379, db=0):
+def loads(s, host='localhost', port=6379, db=0, empty=False):
     r = redis.Redis(host=host, port=port, db=db)
+    if empty:
+        for key in r.keys():
+            r.delete(key)
     table = json.loads(s)
     for key in table:
         item = table[key]
@@ -54,9 +57,9 @@ def loads(s, host='localhost', port=6379, db=0):
         value = item['value']
         _writer(r, key, type, value)
 
-def load(fp, host='localhost', port=6379, db=0):
+def load(fp, host='localhost', port=6379, db=0, empty=False):
     s = fp.read()
-    loads(s, host, port, db)
+    loads(s, host, port, db, empty)
 
 def _writer(r, key, type, value):
     r.delete(key)
@@ -93,6 +96,9 @@ if __name__ == '__main__':
             args['port'] = int(options.port)
         if options.db:
             args['db'] = int(options.db)
+        # load only
+        if options.empty:
+            args['empty'] = True
         return args
     
     def do_dump(options):
@@ -142,6 +148,7 @@ if __name__ == '__main__':
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout')
     else:
         parser.add_option('-d', '--db', help='import into DATABASE (0-N, default 0)')
+        parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading')
     options, args = parser.parse_args()
     
     if action == DUMP:
