@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import json
 import redis
 
@@ -76,29 +78,79 @@ def _writer(r, key, type, value):
 
 if __name__ == '__main__':
     import optparse
+    import os.path
+    import re
     import sys
     
-    parser = optparse.OptionParser()
+    DUMP = 1
+    LOAD = 2
+    
+    def options_to_kwargs(options):
+        args = {}
+        if options.host:
+            args['host'] = options.host
+        if options.port:
+            args['port'] = int(options.port)
+        if options.db:
+            args['db'] = int(options.db)
+        return args
+    
+    def do_dump(options):
+        if options.output:
+            output = open(options.output, 'w')
+        else:
+            output = sys.stdout
+        
+        kwargs = options_to_kwargs(options)
+        dump(output, **kwargs)
+        
+        if options.output:
+            output.close()
+    
+    def do_load(options, args):
+        if len(args) > 0:
+            input = open(args[0], 'r')
+        else:
+            input = sys.stdin
+        
+        kwargs = options_to_kwargs(options)
+        dump(output, **kwargs)
+        
+        if len(args) > 0:
+            input.close()
+    
+    if re.search(r'load(?:$|\.)', os.path.basename(sys.argv[0])):
+        action = LOAD
+    else:
+        action = DUMP
+    
+    if action == LOAD:
+        usage = "Usage: %prog [options] [FILE]"
+        usage += "\n\nLoad data from FILE (which must be a JSON dump previously created"
+        usage += "\nby redisdl) into specified or default redis."
+        usage += "\n\nIf FILE is omitted standard input is read."
+    else:
+        usage = "Usage: %prog [options]"
+        usage += "\n\nDump data from specified or default redis."
+        usage += "\n\nIf no output file is specified, dump to standard output."
+    parser = optparse.OptionParser(usage=usage)
     parser.add_option('-H', '--host', help='connect to HOST (default localhost)')
     parser.add_option('-p', '--port', help='connect to PORT (default 6379)')
     parser.add_option('-s', '--socket', help='connect to SOCKET')
-    parser.add_option('-d', '--db', help='dump DATABASE (0-N, default 0)')
-    parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout')
+    if action == DUMP:
+        parser.add_option('-d', '--db', help='dump DATABASE (0-N, default 0)')
+        parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout')
+    else:
+        parser.add_option('-d', '--db', help='import into DATABASE (0-N, default 0)')
     options, args = parser.parse_args()
     
-    if options.output:
-        output = open(options.output, 'w')
+    if action == DUMP:
+        if len(args) > 0:
+            parser.print_help()
+            exit(4)
+        do_dump(options)
     else:
-        output = sys.stdout
-    
-    args = {}
-    if options.host:
-        args['host'] = options.host
-    if options.port:
-        args['port'] = int(options.port)
-    if options.db:
-        args['db'] = int(options.db)
-    dump(output, **args)
-    
-    if options.output:
-        output.close()
+        if len(args) > 1:
+            parser.print_help()
+            exit(4)
+        do_load(options, args)
