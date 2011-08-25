@@ -13,7 +13,7 @@ def dumps(host='localhost', port=6379, db=0, pretty=False):
         kwargs['sort_keys'] = True
     encoder = json.JSONEncoder(**kwargs)
     table = {}
-    for key, type, value in _reader(r):
+    for key, type, value in _reader(r, pretty):
         table[key] = {'type': type, 'value': value}
     return encoder.encode(table)
 
@@ -33,7 +33,7 @@ def dump(fp, host='localhost', port=6379, db=0, pretty=False):
     encoder = json.JSONEncoder(**kwargs)
     fp.write('{')
     first = True
-    for key, type, value in _reader(r):
+    for key, type, value in _reader(r, pretty):
         key = encoder.encode(key)
         type = encoder.encode(type)
         value = encoder.encode(value)
@@ -45,7 +45,7 @@ def dump(fp, host='localhost', port=6379, db=0, pretty=False):
         fp.write(item)
     fp.write('}')
 
-def _reader(r):
+def _reader(r, pretty):
     for key in r.keys():
         type = r.type(key)
         if type == 'string':
@@ -54,6 +54,8 @@ def _reader(r):
             value = r.lrange(key, 0, -1)
         elif type == 'set':
             value = list(r.smembers(key))
+            if pretty:
+                value.sort()
         elif type == 'zset':
             value = r.zrange(key, 0, -1, False, True)
         elif type == 'hash':
