@@ -84,7 +84,7 @@ def _writer(r, key, type, value):
         r.set(key, value)
     elif type == 'list':
         for element in value:
-            r.lpush(key, element)
+            r.rpush(key, element)
     elif type == 'set':
         for element in value:
             r.sadd(key, element)
