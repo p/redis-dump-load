@@ -97,7 +97,7 @@ if __name__ == '__main__':
         if options.db:
             args['db'] = int(options.db)
         # load only
-        if options.empty:
+        if hasattr(options, 'empty') and options.empty:
             args['empty'] = True
         return args
     
@@ -125,30 +125,47 @@ if __name__ == '__main__':
         if len(args) > 0:
             input.close()
     
-    if re.search(r'load(?:$|\.)', os.path.basename(sys.argv[0])):
-        action = LOAD
+    script_name = os.path.basename(sys.argv[0])
+    if re.search(r'load(?:$|\.)', script_name):
+        action = help = LOAD
+    elif re.search(r'dump(?:$|\.)', script_name):
+        action = help = DUMP
     else:
+        # default is dump, however if dump is specifically requested
+        # we don't show help text for toggling between dumping and loading
         action = DUMP
+        help = None
     
-    if action == LOAD:
+    if help == LOAD:
         usage = "Usage: %prog [options] [FILE]"
         usage += "\n\nLoad data from FILE (which must be a JSON dump previously created"
         usage += "\nby redisdl) into specified or default redis."
         usage += "\n\nIf FILE is omitted standard input is read."
-    else:
+    elif help == DUMP:
         usage = "Usage: %prog [options]"
         usage += "\n\nDump data from specified or default redis."
         usage += "\n\nIf no output file is specified, dump to standard output."
+    else:
+        usage = "Usage: %prog [options]"
+        usage += "\n       %prog -l [options] [FILE]"
+        usage += "\n\nDump data from redis or load data into redis."
+        usage += "\n\nIf input or output file is specified, dump to standard output and load"
+        usage += "\nfrom standard input."
     parser = optparse.OptionParser(usage=usage)
     parser.add_option('-H', '--host', help='connect to HOST (default localhost)')
     parser.add_option('-p', '--port', help='connect to PORT (default 6379)')
     parser.add_option('-s', '--socket', help='connect to SOCKET')
-    if action == DUMP:
+    if help == DUMP:
         parser.add_option('-d', '--db', help='dump DATABASE (0-N, default 0)')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout')
-    else:
-        parser.add_option('-d', '--db', help='import into DATABASE (0-N, default 0)')
+    elif help == LOAD:
+        parser.add_option('-d', '--db', help='load into DATABASE (0-N, default 0)')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading')
+    else:
+        parser.add_option('-l', '--load', help='load data into redis (default is to dump data from redis)', action='store_true')
+        parser.add_option('-d', '--db', help='dump or load into DATABASE (0-N, default 0)')
+        parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout (dump mode only)')
+        parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading (load mode only)', action='store_true')
     options, args = parser.parse_args()
     
     if action == DUMP:
