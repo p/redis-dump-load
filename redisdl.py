@@ -3,17 +3,34 @@
 import json
 import redis
 
-def dumps(host='localhost', port=6379, db=0):
+def dumps(host='localhost', port=6379, db=0, pretty=False):
     r = redis.Redis(host=host, port=port, db=db)
-    encoder = json.JSONEncoder(separators=(',', ':'))
+    kwargs = {}
+    if not pretty:
+        kwargs['separators'] = (',', ':')
+    else:
+        kwargs['indent'] = 2
+        kwargs['sort_keys'] = True
+    encoder = json.JSONEncoder(**kwargs)
     table = {}
     for key, type, value in _reader(r):
         table[key] = {'type': type, 'value': value}
     return encoder.encode(table)
 
-def dump(fp, host='localhost', port=6379, db=0):
+def dump(fp, host='localhost', port=6379, db=0, pretty=False):
+    if pretty:
+        # hack to avoid implementing pretty printing
+        fp.write(dumps(host=host, port=port, db=db, pretty=pretty))
+        return
+    
     r = redis.Redis(host=host, port=port, db=db)
-    encoder = json.JSONEncoder(separators=(',', ':'))
+    kwargs = {}
+    if not pretty:
+        kwargs['separators'] = (',', ':')
+    else:
+        kwargs['indent'] = 2
+        kwargs['sort_keys'] = True
+    encoder = json.JSONEncoder(**kwargs)
     fp.write('{')
     first = True
     for key, type, value in _reader(r):
@@ -96,6 +113,9 @@ if __name__ == '__main__':
             args['port'] = int(options.port)
         if options.db:
             args['db'] = int(options.db)
+        # dump only
+        if hasattr(options, 'pretty') and options.pretty:
+            args['pretty'] = True
         # load only
         if hasattr(options, 'empty') and options.empty:
             args['empty'] = True
@@ -158,6 +178,7 @@ if __name__ == '__main__':
     if help == DUMP:
         parser.add_option('-d', '--db', help='dump DATABASE (0-N, default 0)')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout')
+        parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it', action='store_true')
     elif help == LOAD:
         parser.add_option('-d', '--db', help='load into DATABASE (0-N, default 0)')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading')
@@ -165,6 +186,7 @@ if __name__ == '__main__':
         parser.add_option('-l', '--load', help='load data into redis (default is to dump data from redis)', action='store_true')
         parser.add_option('-d', '--db', help='dump or load into DATABASE (0-N, default 0)')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout (dump mode only)')
+        parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it (dump mode only)', action='store_true')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading (load mode only)', action='store_true')
     options, args = parser.parse_args()
     
