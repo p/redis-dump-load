@@ -120,7 +120,7 @@ if __name__ == '__main__':
             input = sys.stdin
         
         kwargs = options_to_kwargs(options)
-        dump(output, **kwargs)
+        load(input, **kwargs)
         
         if len(args) > 0:
             input.close()
