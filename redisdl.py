@@ -192,6 +192,9 @@ if __name__ == '__main__':
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading (load mode only)', action='store_true')
     options, args = parser.parse_args()
     
+    if options.load:
+        action = LOAD
+    
     if action == DUMP:
         if len(args) > 0:
             parser.print_help()
