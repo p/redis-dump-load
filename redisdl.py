@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-import json
+try:
+    import json
+except ImportError:
+    import simplejson as json
 import redis
 
 def dumps(host='localhost', port=6379, db=0, pretty=False):
