@@ -182,7 +182,7 @@ if __name__ == '__main__':
     parser.add_option('-H', '--host', help='connect to HOST (default localhost)')
     parser.add_option('-p', '--port', help='connect to PORT (default 6379)')
     parser.add_option('-s', '--socket', help='connect to SOCKET')
-    parser.add_option('-a', '--password', help='connect with PASSWORD')
+    parser.add_option('-w', '--password', help='connect with PASSWORD')
     if help == DUMP:
         parser.add_option('-d', '--db', help='dump DATABASE (0-N, default 0)')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout')
