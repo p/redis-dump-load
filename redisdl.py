@@ -6,8 +6,8 @@ except ImportError:
     import simplejson as json
 import redis
 
-def dumps(host='localhost', port=6379, db=0, pretty=False):
-    r = redis.Redis(host=host, port=port, db=db)
+def dumps(host='localhost', port=6379, password=None, db=0, pretty=False):
+    r = redis.Redis(host=host, port=port, password=password, db=db)
     kwargs = {}
     if not pretty:
         kwargs['separators'] = (',', ':')
@@ -20,13 +20,13 @@ def dumps(host='localhost', port=6379, db=0, pretty=False):
         table[key] = {'type': type, 'value': value}
     return encoder.encode(table)
 
-def dump(fp, host='localhost', port=6379, db=0, pretty=False):
+def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False):
     if pretty:
         # hack to avoid implementing pretty printing
-        fp.write(dumps(host=host, port=port, db=db, pretty=pretty))
+        fp.write(dumps(host=host, port=port, password=password, db=db, pretty=pretty))
         return
     
-    r = redis.Redis(host=host, port=port, db=db)
+    r = redis.Redis(host=host, port=port, password=password, db=db)
     kwargs = {}
     if not pretty:
         kwargs['separators'] = (',', ':')
@@ -67,8 +67,8 @@ def _reader(r, pretty):
             raise UnknownTypeError("Unknown key type: %s" % type)
         yield key, type, value
 
-def loads(s, host='localhost', port=6379, db=0, empty=False):
-    r = redis.Redis(host=host, port=port, db=db)
+def loads(s, host='localhost', port=6379, password=None, db=0, empty=False):
+    r = redis.Redis(host=host, port=port, password=password, db=db)
     if empty:
         for key in r.keys():
             r.delete(key)
@@ -79,9 +79,9 @@ def loads(s, host='localhost', port=6379, db=0, empty=False):
         value = item['value']
         _writer(r, key, type, value)
 
-def load(fp, host='localhost', port=6379, db=0, empty=False):
+def load(fp, host='localhost', port=6379, password=None, db=0, empty=False):
     s = fp.read()
-    loads(s, host, port, db, empty)
+    loads(s, host, port, password, db, empty)
 
 def _writer(r, key, type, value):
     r.delete(key)
@@ -116,6 +116,8 @@ if __name__ == '__main__':
             args['host'] = options.host
         if options.port:
             args['port'] = int(options.port)
+        if options.password:
+            args['password'] = options.password
         if options.db:
             args['db'] = int(options.db)
         # dump only
@@ -180,6 +182,7 @@ if __name__ == '__main__':
     parser.add_option('-H', '--host', help='connect to HOST (default localhost)')
     parser.add_option('-p', '--port', help='connect to PORT (default 6379)')
     parser.add_option('-s', '--socket', help='connect to SOCKET')
+    parser.add_option('-w', '--password', help='connect with PASSWORD')
     if help == DUMP:
         parser.add_option('-d', '--db', help='dump DATABASE (0-N, default 0)')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout')
