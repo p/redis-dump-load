@@ -10,6 +10,7 @@ it is written in Ruby.
 The output format is intended to be compatible with redis-dump.
 
 Usage
+-----
 
 redis-dump-load may be used as a module and also as a command-line tool.
 
@@ -34,6 +35,11 @@ Dependencies
 
  - redis-py_
  - simplejson_ (Python 2.5 only)
+
+License
+-------
+
+Released under the 2 clause BSD license.
 
 .. _redis-dump: https://github.com/delano/redis-dump
 .. _redis-py: https://github.com/andymccurdy/redis-py
