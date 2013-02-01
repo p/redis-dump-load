@@ -1,9 +1,10 @@
 redis-dump-load
+===============
 
 Dumps Redis data sets into a format suitable for long-term storage
 (currently JSON) and loads data from such dump files back into Redis.
 
-redis-dump (https://github.com/delano/redis-dump) was there first, but
+redis-dump_ was there first, but
 it is written in Ruby.
 
 The output format is intended to be compatible with redis-dump.
@@ -22,14 +23,18 @@ change the mode to load regardless of what the script is called.
 
 Example hardlink shortcuts:
 
-ln redisdl.py redis-dump
-ln redisdl.py redis-load
+::
+
+	ln redisdl.py redis-dump
+	ln redisdl.py redis-load
 
 Symlinks work equally well.
 
 Dependencies
 
- - redis-py (https://github.com/andymccurdy/redis-py);
- - json.
+ - redis-py_
+ - simplejson_ (Python 2.5 only)
 
-json is part of Python standard library as of 2.6.
+.. _redis-dump: https://github.com/delano/redis-dump
+.. _redis-py: https://github.com/andymccurdy/redis-py
+.. _simplejson: http://pypi.python.org/pypi/simplejson/
