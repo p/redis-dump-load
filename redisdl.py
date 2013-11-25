@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import incremental_json
 try:
     import json
 except ImportError:
@@ -67,21 +68,19 @@ def _reader(r, pretty):
             raise UnknownTypeError("Unknown key type: %s" % type)
         yield key, type, value
 
-def loads(s, host='localhost', port=6379, password=None, db=0, empty=False):
+def loads(fp, host='localhost', port=6379, password=None, db=0, empty=False):
     r = redis.Redis(host=host, port=port, password=password, db=db)
     if empty:
         for key in r.keys():
             r.delete(key)
-    table = json.loads(s)
-    for key in table:
-        item = table[key]
+    table = incremental_json.loads(fp)
+    for key, item in table:
         type = item['type']
         value = item['value']
         _writer(r, key, type, value)
 
 def load(fp, host='localhost', port=6379, password=None, db=0, empty=False):
-    s = fp.read()
-    loads(s, host, port, password, db, empty)
+    loads(fp, host, port, password, db, empty)
 
 def _writer(r, key, type, value):
     r.delete(key)
