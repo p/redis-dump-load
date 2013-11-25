@@ -111,6 +111,8 @@ def loads(file_obj):
             if char == '"':
                 obj_start = cursor
                 state = INSIDE_KEY
+            elif char == '}':
+                state = FINISHED
         
         elif state == INSIDE_KEY:
             if char == '"':
