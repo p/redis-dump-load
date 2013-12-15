@@ -33,7 +33,7 @@ def client(host='localhost', port=6379, password=None, db=0,
 def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
           unix_socket_path=''):
     r = client(host=host, port=port, password=password, db=db,
-               unix_socket_path='')
+               unix_socket_path=unix_socket_path)
     kwargs = {}
     if not pretty:
         kwargs['separators'] = (',', ':')
@@ -54,7 +54,7 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
         return
     
     r = client(host=host, port=port, password=password, db=db,
-               unix_socket_path='')
+               unix_socket_path=unix_socket_path)
     kwargs = {}
     if not pretty:
         kwargs['separators'] = (',', ':')
@@ -103,7 +103,7 @@ def _reader(r, pretty):
 def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
           unix_socket_path=''):
     r = client(host=host, port=port, password=password, db=db,
-               unix_socket_path='')
+               unix_socket_path=unix_socket_path)
     if empty:
         for key in r.keys():
             r.delete(key)
