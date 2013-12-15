@@ -10,7 +10,7 @@ def client(host='localhost', port=6379, password=None, db=0,
                  unix_socket_path=None):
     if unix_socket_path is not None:
         r = redis.Redis(unix_socket_path=unix_socket_path,
-                        password=None,
+                        password=password,
                         db=db)
     else:
         r = redis.Redis(host=host,
