@@ -136,6 +136,8 @@ if __name__ == '__main__':
             args['host'] = options.host
         if options.port:
             args['port'] = int(options.port)
+        if options.socket:
+            args['unix_socket_path'] = options.socket
         if options.password:
             args['password'] = options.password
         if options.db:
