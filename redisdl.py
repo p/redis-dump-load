@@ -18,8 +18,8 @@ class UnknownTypeError(base_exception_class):
     pass
 
 def client(host='localhost', port=6379, password=None, db=0,
-                 unix_socket_path=''):
-    if unix_socket_path:
+                 unix_socket_path=None):
+    if unix_socket_path is not None:
         r = redis.Redis(unix_socket_path=unix_socket_path,
                         password=None,
                         db=db)
@@ -31,7 +31,7 @@ def client(host='localhost', port=6379, password=None, db=0,
     return r
 
 def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
-          unix_socket_path=''):
+          unix_socket_path=None):
     r = client(host=host, port=port, password=password, db=db,
                unix_socket_path=unix_socket_path)
     kwargs = {}
@@ -47,7 +47,7 @@ def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
     return encoder.encode(table)
 
 def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
-         unix_socket_path=''):
+         unix_socket_path=None):
     if pretty:
         # hack to avoid implementing pretty printing
         fp.write(dumps(host=host, port=port, password=password, db=db, pretty=pretty))
@@ -101,7 +101,7 @@ def _reader(r, pretty):
         yield key, type, value
 
 def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
-          unix_socket_path=''):
+          unix_socket_path=None):
     r = client(host=host, port=port, password=password, db=db,
                unix_socket_path=unix_socket_path)
     if empty:
@@ -115,7 +115,7 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
         _writer(r, key, type, value)
 
 def load(fp, host='localhost', port=6379, password=None, db=0, empty=False,
-         unix_socket_path=''):
+         unix_socket_path=None):
     s = fp.read()
     loads(s, host, port, password, db, empty, unix_socket_path)
 
