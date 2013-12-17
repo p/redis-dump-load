@@ -61,19 +61,24 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False):
 
 def _reader(r, pretty):
     for key in r.keys():
-        type = r.type(key)
+        key = key.decode()
+        type = r.type(key).decode()
         if type == 'string':
-            value = r.get(key)
+            value = r.get(key).decode()
         elif type == 'list':
-            value = r.lrange(key, 0, -1)
+            value = [v.decode() for v in r.lrange(key, 0, -1)]
         elif type == 'set':
-            value = list(r.smembers(key))
+            value = [v.decode() for v in r.smembers(key)]
             if pretty:
                 value.sort()
         elif type == 'zset':
-            value = r.zrange(key, 0, -1, False, True)
+            encoded = r.zrange(key, 0, -1, False, True)
+            value = [(k.decode(), score) for k, score in encoded]
         elif type == 'hash':
-            value = r.hgetall(key)
+            encoded = r.hgetall(key)
+            value = {}
+            for k in encoded:
+                value[k.decode()] = encoded[k].decode()
         else:
             raise UnknownTypeError("Unknown key type: %s" % type)
         yield key, type, value
