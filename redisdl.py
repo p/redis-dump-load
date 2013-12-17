@@ -5,6 +5,17 @@ try:
 except ImportError:
     import simplejson as json
 import redis
+import sys
+
+py3 = sys.version_info[0] == 3
+
+if py3:
+    base_exception_class = Exception
+else:
+    base_exception_class = StandardError
+
+class UnknownTypeError(base_exception_class):
+    pass
 
 def dumps(host='localhost', port=6379, password=None, db=0, pretty=False):
     r = redis.Redis(host=host, port=port, password=password, db=db)
