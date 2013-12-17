@@ -1,1 +1,38 @@
-{"lvar":{"type":"list","value":["lvalue","lvalue1"]},"svar":{"type":"set","value":["svalue"]},"akey":{"type":"string","value":"avalue"},"hvar":{"type":"hash","value":{"hkey":"hvalue"}}}
+{
+    "akey": {
+        "type": "string",
+        "value": "avalue"
+    },
+    "hvar": {
+        "type": "hash",
+        "value": {
+            "hkey": "hvalue"
+        }
+    },
+    "lvar": {
+        "type": "list",
+        "value": [
+            "lvalue",
+            "lvalue1"
+        ]
+    },
+    "svar": {
+        "type": "set",
+        "value": [
+            "svalue"
+        ]
+    },
+    "zvar": {
+        "type": "zset",
+        "value": [
+            [
+                "one",
+                1.0
+            ],
+            [
+                "two",
+                2.0
+            ]
+        ]
+    }
+}
