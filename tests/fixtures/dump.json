@@ -1,0 +1,1 @@
+{"lvar":{"type":"list","value":["lvalue","lvalue1"]},"svar":{"type":"set","value":["svalue"]},"akey":{"type":"string","value":"avalue"},"hvar":{"type":"hash","value":{"hkey":"hvalue"}}}
