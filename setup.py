@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='redis-dump-load',
-    version='0.1.1',
+    version='0.2.0',
     description='Dump and load redis databases',
     author='Oleg Pudeyev',
     author_email='oleg@bsdpower.com',
