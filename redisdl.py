@@ -108,11 +108,23 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
         for key in r.keys():
             r.delete(key)
     table = json.loads(s)
+    counter = 0
     for key in table:
+        # Create pipeline:
+        if not counter:
+            p = r.pipeline(transaction=False)
         item = table[key]
         type = item['type']
         value = item['value']
-        _writer(r, key, type, value)
+        _writer(p, key, type, value)
+        # Increase counter until 10 000...
+        counter = (counter + 1) % 10000
+        # ... then execute:
+        if not counter:
+            p.execute()
+    if counter:
+        # Finally, execute again:
+        p.execute()
 
 def load(fp, host='localhost', port=6379, password=None, db=0, empty=False,
          unix_socket_path=None):
