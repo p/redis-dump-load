@@ -99,6 +99,9 @@ def _reader(r, pretty, encoding):
             value = {}
             for k in encoded:
                 value[k.decode(encoding)] = encoded[k].decode(encoding)
+        elif type == 'none':
+            # key was deleted by a concurrent operation on the data store
+            continue
         else:
             raise UnknownTypeError("Unknown key type: %s" % type)
         yield key, type, value
