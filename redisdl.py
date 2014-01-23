@@ -52,7 +52,7 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
         # hack to avoid implementing pretty printing
         fp.write(dumps(host=host, port=port, password=password, db=db, pretty=pretty))
         return
-    
+
     r = client(host=host, port=port, password=password, db=db,
                unix_socket_path=unix_socket_path)
     kwargs = {}
@@ -96,6 +96,9 @@ def _reader(r, pretty):
             value = {}
             for k in encoded:
                 value[k.decode()] = encoded[k].decode()
+        elif type == 'none':
+            #I am unsure how this happens, but I run into it fairly often
+            continue
         else:
             raise UnknownTypeError("Unknown key type: %s" % type)
         yield key, type, value
@@ -146,6 +149,9 @@ def _writer(r, key, type, value):
             r.zadd(key, element, score)
     elif type == 'hash':
         r.hmset(key, value)
+    elif type == 'none':
+        #I am unsure how this happens, but I run into it fairly often
+        continue
     else:
         raise UnknownTypeError("Unknown key type: %s" % type)
 
@@ -154,10 +160,10 @@ if __name__ == '__main__':
     import os.path
     import re
     import sys
-    
+
     DUMP = 1
     LOAD = 2
-    
+
     def options_to_kwargs(options):
         args = {}
         if options.host:
@@ -177,31 +183,31 @@ if __name__ == '__main__':
         if hasattr(options, 'empty') and options.empty:
             args['empty'] = True
         return args
-    
+
     def do_dump(options):
         if options.output:
             output = open(options.output, 'w')
         else:
             output = sys.stdout
-        
+
         kwargs = options_to_kwargs(options)
         dump(output, **kwargs)
-        
+
         if options.output:
             output.close()
-    
+
     def do_load(options, args):
         if len(args) > 0:
             input = open(args[0], 'r')
         else:
             input = sys.stdin
-        
+
         kwargs = options_to_kwargs(options)
         load(input, **kwargs)
-        
+
         if len(args) > 0:
             input.close()
-    
+
     script_name = os.path.basename(sys.argv[0])
     if re.search(r'load(?:$|\.)', script_name):
         action = help = LOAD
@@ -212,7 +218,7 @@ if __name__ == '__main__':
         # we don't show help text for toggling between dumping and loading
         action = DUMP
         help = None
-    
+
     if help == LOAD:
         usage = "Usage: %prog [options] [FILE]"
         usage += "\n\nLoad data from FILE (which must be a JSON dump previously created"
@@ -247,10 +253,10 @@ if __name__ == '__main__':
         parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it (dump mode only)', action='store_true')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading (load mode only)', action='store_true')
     options, args = parser.parse_args()
-    
+
     if options.load:
         action = LOAD
-    
+
     if action == DUMP:
         if len(args) > 0:
             parser.print_help()
