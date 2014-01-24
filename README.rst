@@ -1,6 +1,9 @@
 redis-dump-load
 ===============
 
+.. image:: https://api.travis-ci.org/p/redis-dump-load.png
+  :target: https://travis-ci.org/p/redis-dump-load
+
 Dumps Redis data sets into a format suitable for long-term storage
 (currently JSON) and loads data from such dump files back into Redis.
 
