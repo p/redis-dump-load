@@ -96,6 +96,9 @@ def _reader(r, pretty):
             value = {}
             for k in encoded:
                 value[k.decode()] = encoded[k].decode()
+        elif type == 'none':
+            #I am unsure how this happens, but I run into it fairly often
+            continue
         else:
             raise UnknownTypeError("Unknown key type: %s" % type)
         yield key, type, value
@@ -146,6 +149,9 @@ def _writer(r, key, type, value):
             r.zadd(key, element, score)
     elif type == 'hash':
         r.hmset(key, value)
+    elif type == 'none':
+        #I am unsure how this happens, but I run into it fairly often
+        continue
     else:
         raise UnknownTypeError("Unknown key type: %s" % type)
 
