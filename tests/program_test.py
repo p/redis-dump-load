@@ -5,7 +5,7 @@ import json
 import os.path
 from . import util
 
-unicode_dump = {u'akey': {u'type': u'string', u'value': u'\u041c\u043e\u0441\u043a\u0432\u0430'}, u'lvar': {u'type': u'list', u'value': [u'\u041c\u043e\u0441\u043a\u0432\u0430']}, u'svar': {u'type': u'set', u'value': [u'\u041c\u043e\u0441\u043a\u0432\u0430']}, u'zvar': {u'type': u'zset', u'value': [[u'\u041c\u043e\u0441\u043a\u0432\u0430', 1.0]]}, u'hvar': {u'type': u'hash', u'value': {u'hkey': u'\u041c\u043e\u0441\u043a\u0432\u0430'}}}
+unicode_dump = {'akey': {'type': 'string', 'value': util.u('\u041c\u043e\u0441\u043a\u0432\u0430')}, 'lvar': {'type': 'list', 'value': [util.u('\u041c\u043e\u0441\u043a\u0432\u0430')]}, 'svar': {'type': 'set', 'value': [util.u('\u041c\u043e\u0441\u043a\u0432\u0430')]}, 'zvar': {'type': 'zset', 'value': [[util.u('\u041c\u043e\u0441\u043a\u0432\u0430'), 1.0]]}, 'hvar': {'type': 'hash', 'value': {'hkey': util.u('\u041c\u043e\u0441\u043a\u0432\u0430')}}}
 
 class ProgramTest(unittest.TestCase):
     def setUp(self):
