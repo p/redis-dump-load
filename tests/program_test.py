@@ -23,7 +23,7 @@ class ProgramTest(unittest.TestCase):
 
         redisdl.loads(dump)
 
-        redump = subprocess.check_output([self.program])
+        redump = subprocess.check_output([self.program]).decode('utf-8')
 
         expected = json.loads(dump)
         actual = json.loads(redump)
@@ -33,7 +33,7 @@ class ProgramTest(unittest.TestCase):
     def test_dump_unicode(self):
         redisdl.loads(json.dumps(unicode_dump))
 
-        redump = subprocess.check_output([self.program])
+        redump = subprocess.check_output([self.program]).decode('utf-8')
 
         actual = json.loads(redump)
 
