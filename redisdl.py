@@ -129,9 +129,9 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
         p.execute()
 
 def load(fp, host='localhost', port=6379, password=None, db=0, empty=False,
-         unix_socket_path=None):
+         unix_socket_path=None, encoding='utf-8'):
     s = fp.read()
-    loads(s, host, port, password, db, empty, unix_socket_path)
+    loads(s, host, port, password, db, empty, unix_socket_path, encoding)
 
 def _writer(r, key, type, value):
     r.delete(key)
