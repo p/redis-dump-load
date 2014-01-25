@@ -4,7 +4,7 @@ import json
 import os.path
 from . import util
 
-class RedisdlTest(unittest.TestCase):
+class ModuleTest(unittest.TestCase):
     def setUp(self):
         import redis
         self.r = redis.Redis()
