@@ -31,7 +31,7 @@ def client(host='localhost', port=6379, password=None, db=0,
     return r
 
 def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
-          unix_socket_path=None, encoding='latin1'):
+          unix_socket_path=None, encoding='utf-8'):
     r = client(host=host, port=port, password=password, db=db,
                unix_socket_path=unix_socket_path)
     kwargs = {}
@@ -47,7 +47,7 @@ def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
     return encoder.encode(table)
 
 def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
-         unix_socket_path=None, encoding='latin1'):
+         unix_socket_path=None, encoding='utf-8'):
     if pretty:
         # hack to avoid implementing pretty printing
         fp.write(dumps(host=host, port=port, password=password, db=db, pretty=pretty, encoding=encoding))
@@ -240,7 +240,7 @@ if __name__ == '__main__':
         parser.add_option('-d', '--db', help='dump DATABASE (0-N, default 0)')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout')
         parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it', action='store_true')
-        parser.add_option('-E', '--encoding', help='set a specific encoding to use while decoding the data from redis', default='latin1')
+        parser.add_option('-E', '--encoding', help='set a specific encoding to use while decoding the data from redis', default='utf-8')
     elif help == LOAD:
         parser.add_option('-d', '--db', help='load into DATABASE (0-N, default 0)')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading')
@@ -250,7 +250,7 @@ if __name__ == '__main__':
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout (dump mode only)')
         parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it (dump mode only)', action='store_true')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading (load mode only)', action='store_true')
-        parser.add_option('-E', '--encoding', help='set a specific encoding to use while decoding the data from redis', default='latin1')
+        parser.add_option('-E', '--encoding', help='set a specific encoding to use while decoding the data from redis', default='utf-8')
     options, args = parser.parse_args()
 
     if options.load:
