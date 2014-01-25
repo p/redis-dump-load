@@ -39,6 +39,18 @@ Dependencies
  - redis-py_
  - simplejson_ (Python 2.5 only)
 
+Unicode
+-------
+
+Redis operates on bytes and has no concept of Unicode or encodings.
+JSON operates on Unicode strings and cannot serialize binary data. Therefore,
+redis-dump-load has to encode Unicode strings into byte strings when
+loading data into Redis and decode byte strings into Unicode strings
+when dumping data from Redis.
+By default redis-dump-load uses utf-8 for encoding and decoding.
+This behavior matches py-redis, whose default encoding is utf-8.
+A different encoding can be specified.
+
 License
 -------
 
