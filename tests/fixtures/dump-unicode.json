@@ -1,0 +1,33 @@
+{
+    "akey": {
+        "type": "string",
+        "value": "\u041c\u043e\u0441\u043a\u0432\u0430"
+    },
+    "hvar": {
+        "type": "hash",
+        "value": {
+            "hkey": "\u041c\u043e\u0441\u043a\u0432\u0430"
+        }
+    },
+    "lvar": {
+        "type": "list",
+        "value": [
+            "\u041c\u043e\u0441\u043a\u0432\u0430"
+        ]
+    },
+    "svar": {
+        "type": "set",
+        "value": [
+            "\u041c\u043e\u0441\u043a\u0432\u0430"
+        ]
+    },
+    "zvar": {
+        "type": "zset",
+        "value": [
+            [
+                "\u041c\u043e\u0441\u043a\u0432\u0430",
+                1.0
+            ]
+        ]
+    }
+}
