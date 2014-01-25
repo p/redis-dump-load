@@ -172,12 +172,11 @@ if __name__ == '__main__':
             args['password'] = options.password
         if options.db:
             args['db'] = int(options.db)
+        if options.encoding:
+            args['encoding'] = options.encoding
         # dump only
         if hasattr(options, 'pretty') and options.pretty:
             args['pretty'] = True
-        # dump only
-        if hasattr(options, 'encoding') and options.encoding:
-            args['encoding'] = options.encoding
         # load only
         if hasattr(options, 'empty') and options.empty:
             args['empty'] = True
@@ -246,6 +245,7 @@ if __name__ == '__main__':
     elif help == LOAD:
         parser.add_option('-d', '--db', help='load into DATABASE (0-N, default 0)')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading')
+        parser.add_option('-E', '--encoding', help='set encoding to use while encoding data to redis', default='utf-8')
     else:
         parser.add_option('-l', '--load', help='load data into redis (default is to dump data from redis)', action='store_true')
         parser.add_option('-d', '--db', help='dump or load into DATABASE (0-N, default 0)')
