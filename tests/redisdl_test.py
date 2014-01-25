@@ -8,11 +8,11 @@ class RedisdlTest(unittest.TestCase):
         path = os.path.join(os.path.dirname(__file__), 'fixtures', 'dump.json')
         with open(path) as f:
             dump = f.read()
-        
+
         redisdl.loads(dump)
-        
+
         redump = redisdl.dumps()
-        
+
         expected = json.loads(dump)
         actual = json.loads(redump)
         
