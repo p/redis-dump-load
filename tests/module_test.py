@@ -33,10 +33,10 @@ class ModuleTest(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_dump_unicode_value(self):
-        self.r.set('key', u"\u041c\u043e\u0441\u043a\u0432\u0430")
+        self.r.set('key', util.u("\u041c\u043e\u0441\u043a\u0432\u0430"))
         dump = redisdl.dumps()
         actual = json.loads(dump)
-        expected = {'key': {'type': 'string', 'value': u"\u041c\u043e\u0441\u043a\u0432\u0430"}}
+        expected = {'key': {'type': 'string', 'value': util.u("\u041c\u043e\u0441\u043a\u0432\u0430")}}
         self.assertEqual(expected, actual)
 
     def test_load_string_value(self):
