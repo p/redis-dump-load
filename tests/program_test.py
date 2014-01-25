@@ -7,6 +7,8 @@ from . import util
 
 unicode_dump = {'akey': {'type': 'string', 'value': util.u('\u041c\u043e\u0441\u043a\u0432\u0430')}, 'lvar': {'type': 'list', 'value': [util.u('\u041c\u043e\u0441\u043a\u0432\u0430')]}, 'svar': {'type': 'set', 'value': [util.u('\u041c\u043e\u0441\u043a\u0432\u0430')]}, 'zvar': {'type': 'zset', 'value': [[util.u('\u041c\u043e\u0441\u043a\u0432\u0430'), 1.0]]}, 'hvar': {'type': 'hash', 'value': {'hkey': util.u('\u041c\u043e\u0441\u043a\u0432\u0430')}}}
 
+check_output = util.get_subprocess_check_output()
+
 class ProgramTest(unittest.TestCase):
     def setUp(self):
         import redis
@@ -23,7 +25,7 @@ class ProgramTest(unittest.TestCase):
 
         redisdl.loads(dump)
 
-        redump = subprocess.check_output([self.program]).decode('utf-8')
+        redump = check_output([self.program]).decode('utf-8')
 
         expected = json.loads(dump)
         actual = json.loads(redump)
@@ -33,7 +35,7 @@ class ProgramTest(unittest.TestCase):
     def test_dump_unicode(self):
         redisdl.loads(json.dumps(unicode_dump))
 
-        redump = subprocess.check_output([self.program]).decode('utf-8')
+        redump = check_output([self.program]).decode('utf-8')
 
         actual = json.loads(redump)
 
