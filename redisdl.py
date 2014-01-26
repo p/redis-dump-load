@@ -18,20 +18,22 @@ class UnknownTypeError(base_exception_class):
     pass
 
 def client(host='localhost', port=6379, password=None, db=0,
-                 unix_socket_path=None):
+                 unix_socket_path=None, encoding='utf-8'):
     if unix_socket_path is not None:
         r = redis.Redis(unix_socket_path=unix_socket_path,
                         password=password,
-                        db=db)
+                        db=db,
+                        charset=encoding)
     else:
         r = redis.Redis(host=host,
                         port=port,
                         password=password,
-                        db=db)
+                        db=db,
+                        charset=encoding)
     return r
 
 def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
-          unix_socket_path=None):
+          unix_socket_path=None, encoding='utf-8'):
     r = client(host=host, port=port, password=password, db=db,
                unix_socket_path=unix_socket_path)
     kwargs = {}
@@ -42,15 +44,15 @@ def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
         kwargs['sort_keys'] = True
     encoder = json.JSONEncoder(**kwargs)
     table = {}
-    for key, type, value in _reader(r, pretty):
+    for key, type, value in _reader(r, pretty, encoding):
         table[key] = {'type': type, 'value': value}
     return encoder.encode(table)
 
 def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
-         unix_socket_path=None):
+         unix_socket_path=None, encoding='utf-8'):
     if pretty:
         # hack to avoid implementing pretty printing
-        fp.write(dumps(host=host, port=port, password=password, db=db, pretty=pretty))
+        fp.write(dumps(host=host, port=port, password=password, db=db, pretty=pretty, encoding=encoding))
         return
 
     r = client(host=host, port=port, password=password, db=db,
@@ -64,7 +66,7 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
     encoder = json.JSONEncoder(**kwargs)
     fp.write('{')
     first = True
-    for key, type, value in _reader(r, pretty):
+    for key, type, value in _reader(r, pretty, encoding):
         key = encoder.encode(key)
         type = encoder.encode(type)
         value = encoder.encode(value)
@@ -76,34 +78,34 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
         fp.write(item)
     fp.write('}')
 
-def _reader(r, pretty):
+def _reader(r, pretty, encoding):
     for key in r.keys():
-        key = key.decode()
-        type = r.type(key).decode()
+        key = key.decode(encoding)
+        type = r.type(key).decode(encoding)
         if type == 'string':
-            value = r.get(key).decode()
+            value = r.get(key).decode(encoding)
         elif type == 'list':
-            value = [v.decode() for v in r.lrange(key, 0, -1)]
+            value = [v.decode(encoding) for v in r.lrange(key, 0, -1)]
         elif type == 'set':
-            value = [v.decode() for v in r.smembers(key)]
+            value = [v.decode(encoding) for v in r.smembers(key)]
             if pretty:
                 value.sort()
         elif type == 'zset':
             encoded = r.zrange(key, 0, -1, False, True)
-            value = [(k.decode(), score) for k, score in encoded]
+            value = [(k.decode(encoding), score) for k, score in encoded]
         elif type == 'hash':
             encoded = r.hgetall(key)
             value = {}
             for k in encoded:
-                value[k.decode()] = encoded[k].decode()
+                value[k.decode(encoding)] = encoded[k].decode(encoding)
         else:
             raise UnknownTypeError("Unknown key type: %s" % type)
         yield key, type, value
 
 def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
-          unix_socket_path=None):
+          unix_socket_path=None, encoding='utf-8'):
     r = client(host=host, port=port, password=password, db=db,
-               unix_socket_path=unix_socket_path)
+               unix_socket_path=unix_socket_path, encoding=encoding)
     if empty:
         for key in r.keys():
             r.delete(key)
@@ -127,9 +129,9 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
         p.execute()
 
 def load(fp, host='localhost', port=6379, password=None, db=0, empty=False,
-         unix_socket_path=None):
+         unix_socket_path=None, encoding='utf-8'):
     s = fp.read()
-    loads(s, host, port, password, db, empty, unix_socket_path)
+    loads(s, host, port, password, db, empty, unix_socket_path, encoding)
 
 def _writer(r, key, type, value):
     r.delete(key)
@@ -170,6 +172,8 @@ if __name__ == '__main__':
             args['password'] = options.password
         if options.db:
             args['db'] = int(options.db)
+        if options.encoding:
+            args['encoding'] = options.encoding
         # dump only
         if hasattr(options, 'pretty') and options.pretty:
             args['pretty'] = True
@@ -237,15 +241,18 @@ if __name__ == '__main__':
         parser.add_option('-d', '--db', help='dump DATABASE (0-N, default 0)')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout')
         parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it', action='store_true')
+        parser.add_option('-E', '--encoding', help='set encoding to use while decoding data from redis', default='utf-8')
     elif help == LOAD:
         parser.add_option('-d', '--db', help='load into DATABASE (0-N, default 0)')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading')
+        parser.add_option('-E', '--encoding', help='set encoding to use while encoding data to redis', default='utf-8')
     else:
         parser.add_option('-l', '--load', help='load data into redis (default is to dump data from redis)', action='store_true')
         parser.add_option('-d', '--db', help='dump or load into DATABASE (0-N, default 0)')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout (dump mode only)')
         parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it (dump mode only)', action='store_true')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading (load mode only)', action='store_true')
+        parser.add_option('-E', '--encoding', help='set encoding to use while decoding data from redis', default='utf-8')
     options, args = parser.parse_args()
 
     if options.load:
