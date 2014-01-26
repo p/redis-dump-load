@@ -46,7 +46,7 @@ class BigData(object):
         for i in range(count):
             self.r.delete('key-%d' % i)
         finish = _time.time()
-        print('%d %d' % (start, finish))
+        return (start, finish)
 
 if __name__ == '__main__':
     import sys
@@ -58,4 +58,5 @@ if __name__ == '__main__':
                 count = int(sys.argv[2])
             else:
                 count = 100000
-            BigData(r).delete(count)
+            start, finish = BigData(r).delete(count)
+            print('%d %d' % (start, finish))
