@@ -1,3 +1,4 @@
+import nose.plugins.attrib
 import time as _time
 import subprocess
 import sys
@@ -8,6 +9,7 @@ import os.path
 from . import util
 from . import big_data
 
+@nose.plugins.attrib.attr('slow')
 class RaceDeletingKeysTest(unittest.TestCase):
     def setUp(self):
         import redis
@@ -15,7 +17,6 @@ class RaceDeletingKeysTest(unittest.TestCase):
         for key in self.r.keys('*'):
             self.r.delete(key)
 
-    # slow
     def test_delete_race(self):
         bd = big_data.BigData(self.r)
         count = bd.determine_key_count()
