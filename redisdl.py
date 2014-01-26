@@ -84,7 +84,11 @@ def _reader(r, pretty, encoding):
         key = key.decode(encoding)
         type = r.type(key).decode('ascii')
         if type == 'string':
-            value = r.get(key).decode(encoding)
+            value = r.get(key)
+            if value is None:
+                # key was deleted between the type call and the get call
+                continue
+            value = value.decode(encoding)
         elif type == 'list':
             value = [v.decode(encoding) for v in r.lrange(key, 0, -1)]
         elif type == 'set':
