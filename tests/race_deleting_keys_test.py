@@ -37,4 +37,5 @@ class RaceDeletingKeysTest(unittest.TestCase):
         delete_start, delete_finish = [int(time) for time in out.split(' ')]
 
         assert delete_start < start
-        assert delete_finish > finish
+        assert finish > start + 5
+        assert delete_finish > start + 5
