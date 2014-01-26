@@ -55,6 +55,14 @@ Currently redis-py is broken on Python 3 with any encoding which is not a
 superset of ascii (https://github.com/andymccurdy/redis-py/issues/430).
 Data sets in such encodings can still be dumped and loaded on Python 2.
 
+Concurrent Modifications
+------------------------
+
+redis-dump-load does not lock the entire data set it is dumping,
+because Redis does not provide a way to do so.
+As a result, modifications to the data set made while a dump is in progress
+affect the contents of the dump.
+
 License
 -------
 
