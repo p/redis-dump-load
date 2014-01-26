@@ -34,7 +34,7 @@ class RaceDeletingKeysTest(unittest.TestCase):
         finish = _time.time()
 
         out, err = p.communicate()
-        delete_start, delete_finish = [int(time) for time in out.split(' ')]
+        delete_start, delete_finish = [int(time) for time in out.decode().split(' ')]
 
         assert delete_start < start
         assert finish > start + 5
