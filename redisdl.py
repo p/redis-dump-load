@@ -90,15 +90,19 @@ def _reader(r, pretty, encoding):
                 continue
             value = value.decode(encoding)
         elif type == 'list':
+            # returns an empty set if the key does not exist
             value = [v.decode(encoding) for v in r.lrange(key, 0, -1)]
         elif type == 'set':
+            # returns an empty list if the key does not exist
             value = [v.decode(encoding) for v in r.smembers(key)]
             if pretty:
                 value.sort()
         elif type == 'zset':
+            # returns an empty list if the key does not exist
             encoded = r.zrange(key, 0, -1, False, True)
             value = [(k.decode(encoding), score) for k, score in encoded]
         elif type == 'hash':
+            # returns an empty dictionary if the key does not exist
             encoded = r.hgetall(key)
             value = {}
             for k in encoded:
