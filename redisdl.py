@@ -81,7 +81,7 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
 def _reader(r, pretty, encoding):
     for key in r.keys():
         key = key.decode(encoding)
-        type = r.type(key).decode(encoding)
+        type = r.type(key).decode('ascii')
         if type == 'string':
             value = r.get(key).decode(encoding)
         elif type == 'list':
