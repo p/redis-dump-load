@@ -43,3 +43,18 @@ def get_subprocess_check_output():
             return output
 
     return check_output
+
+def broken_on_python_3(issue_url):
+    if py3:
+        import nose.plugins.skip
+        import functools
+
+        def decorator(fn):
+            @functools.wraps(fn)
+            def decorated(*args, **kwargs):
+                raise nose.plugins.skip.SkipTest('Broken on Python 3: %s' % issue_url)
+            return decorated
+    else:
+        def decorator(fn):
+            return fn
+    return decorator
