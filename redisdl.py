@@ -35,7 +35,7 @@ def client(host='localhost', port=6379, password=None, db=0,
 def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
           unix_socket_path=None, encoding='utf-8'):
     r = client(host=host, port=port, password=password, db=db,
-               unix_socket_path=unix_socket_path)
+               unix_socket_path=unix_socket_path, encoding=encoding)
     kwargs = {}
     if not pretty:
         kwargs['separators'] = (',', ':')
@@ -52,11 +52,12 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
          unix_socket_path=None, encoding='utf-8'):
     if pretty:
         # hack to avoid implementing pretty printing
-        fp.write(dumps(host=host, port=port, password=password, db=db, pretty=pretty, encoding=encoding))
+        fp.write(dumps(host=host, port=port, password=password, db=db,
+            pretty=pretty, encoding=encoding))
         return
 
     r = client(host=host, port=port, password=password, db=db,
-               unix_socket_path=unix_socket_path)
+               unix_socket_path=unix_socket_path, encoding=encoding)
     kwargs = {}
     if not pretty:
         kwargs['separators'] = (',', ':')
