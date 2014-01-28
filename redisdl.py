@@ -6,6 +6,7 @@ except ImportError:
     import simplejson as json
 import redis
 import sys
+import functools
 
 py3 = sys.version_info[0] == 3
 
@@ -15,6 +16,17 @@ else:
     base_exception_class = StandardError
 
 class UnknownTypeError(base_exception_class):
+    pass
+
+class ConcurrentModificationError(base_exception_class):
+    pass
+
+# internal exceptions
+
+class KeyDeletedError(base_exception_class):
+    pass
+
+class KeyTypeChangedError(base_exception_class):
     pass
 
 def client(host='localhost', port=6379, password=None, db=0,
@@ -79,29 +91,112 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
         fp.write(item)
     fp.write('}')
 
+class StringReader(object):
+    @staticmethod
+    def send_command(p, key):
+        p.get(key)
+
+    @staticmethod
+    def handle_response(response, pretty, encoding):
+        # if key does not exist, get will return None;
+        # however, our type check requires that the key exists
+        return response.decode(encoding)
+
+class ListReader(object):
+    @staticmethod
+    def send_command(p, key):
+        p.lrange(key, 0, -1)
+
+    @staticmethod
+    def handle_response(response, pretty, encoding):
+        return [v.decode(encoding) for v in response]
+
+class SetReader(object):
+    @staticmethod
+    def send_command(p, key):
+        p.smembers(key)
+
+    @staticmethod
+    def handle_response(response, pretty, encoding):
+        value = [v.decode(encoding) for v in response]
+        if pretty:
+            value.sort()
+        return value
+
+class ZsetReader(object):
+    @staticmethod
+    def send_command(p, key):
+        p.zrange(key, 0, -1, False, True)
+
+    @staticmethod
+    def handle_response(response, pretty, encoding):
+        return [(k.decode(encoding), score) for k, score in response]
+
+class HashReader(object):
+    @staticmethod
+    def send_command(p, key):
+        p.hgetall(key)
+
+    @staticmethod
+    def handle_response(response, pretty, encoding):
+        value = {}
+        for k in response:
+            value[k.decode(encoding)] = response[k].decode(encoding)
+        return value
+
+readers = {
+    'string': StringReader,
+    'list': ListReader,
+    'set': SetReader,
+    'zset': ZsetReader,
+    'hash': HashReader,
+}
+
+def _read_key(key, r, pretty, encoding):
+    type = r.type(key).decode('ascii')
+    if type == 'none':
+        # key was deleted by a concurrent operation on the data store
+        raise KeyDeletedError
+    reader = readers.get(type)
+    if reader is None:
+        raise UnknownTypeError("Unknown key type: %s" % type)
+    p = r.pipeline()
+    p.watch(key)
+    p.multi()
+    p.type(key)
+    reader.send_command(p, key)
+    # might raise redis.WatchError
+    results = p.execute()
+    actual_type = results[0].decode('ascii')
+    if actual_type != type:
+        # type changed, retry
+        raise KeyTypeChangedError
+    value = reader.handle_response(results[1], pretty, encoding)
+    return (type, value)
+
 def _reader(r, pretty, encoding):
     for key in r.keys():
         key = key.decode(encoding)
-        type = r.type(key).decode('ascii')
-        if type == 'string':
-            value = r.get(key).decode(encoding)
-        elif type == 'list':
-            value = [v.decode(encoding) for v in r.lrange(key, 0, -1)]
-        elif type == 'set':
-            value = [v.decode(encoding) for v in r.smembers(key)]
-            if pretty:
-                value.sort()
-        elif type == 'zset':
-            encoded = r.zrange(key, 0, -1, False, True)
-            value = [(k.decode(encoding), score) for k, score in encoded]
-        elif type == 'hash':
-            encoded = r.hgetall(key)
-            value = {}
-            for k in encoded:
-                value[k.decode(encoding)] = encoded[k].decode(encoding)
-        else:
-            raise UnknownTypeError("Unknown key type: %s" % type)
-        yield key, type, value
+        handled = False
+        for i in range(10):
+            try:
+                type, value = _read_key(key, r, pretty, encoding)
+                yield key, type, value
+                handled = True
+                break
+            except KeyDeletedError:
+                # do not dump the key
+                handled = True
+                break
+            except redis.WatchError:
+                # same logic as key type changed
+                pass
+            except KeyTypeChangedError:
+                # retry reading type again
+                pass
+        if not handled:
+            # ran out of retries
+            raise ConcurrentModificationError('Key %s is being concurrently modified' % key)
 
 def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
           unix_socket_path=None, encoding='utf-8'):
