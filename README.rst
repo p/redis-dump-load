@@ -73,8 +73,8 @@ the loading mode.
 Dependencies
 ------------
 
- - redis-py_
- - simplejson_ (Python 2.5 only)
+- redis-py_
+- simplejson_ (Python 2.5 only)
 
 Unicode
 -------
