@@ -48,20 +48,21 @@ Dump and load methods accept options as keyword arguments::
 
 The arguments should always be passed in as keyword, i.e, do not rely
 on the order in which the parameters are currently listed.
-The options are as follows:
+Options take string values unless otherwise noted. The options are as follows:
 
 - ``host``: host name or IP address for redis server
 - ``port``: port number for redis server
 - ``unix_socket_path``: connect to redis via a Unix socket instead of TCP/IP;
   specify the path to the socket
 - ``password``: specify password to connect to redis
-- ``db``: redis database to connect to (this is an integer)
+- ``db`` (integer): redis database to connect to
 - ``encoding``: encoding to use for encoding or decoding the data, see
   Unicode section below
-- ``pretty`` (dump only): produce a pretty-printed JSON which is easier
-  to read; currently this makes ``dump`` load entire data set into memory
-  rather than stream it
-- ``empty`` (load only): empty the redis data set before loading the data
+- ``pretty`` (boolean, dump only): produce a pretty-printed JSON which is
+  easier to read; currently this makes ``dump`` load entire data set into
+  memory rather than stream it
+- ``empty`` (boolean, load only): empty the redis data set before loading the
+  data
 
 Command Line Usage
 ^^^^^^^^^^^^^^^^^^
