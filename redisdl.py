@@ -152,6 +152,7 @@ readers = {
     'hash': HashReader,
 }
 
+# note: key is a byte string
 def _read_key(key, r, pretty, encoding):
     type = r.type(key).decode('ascii')
     if type == 'none':
@@ -175,12 +176,12 @@ def _read_key(key, r, pretty, encoding):
     return (type, value)
 
 def _reader(r, pretty, encoding):
-    for key in r.keys():
-        key = key.decode(encoding)
+    for encoded_key in r.keys():
+        key = encoded_key.decode(encoding)
         handled = False
         for i in range(10):
             try:
-                type, value = _read_key(key, r, pretty, encoding)
+                type, value = _read_key(encoded_key, r, pretty, encoding)
                 yield key, type, value
                 handled = True
                 break
