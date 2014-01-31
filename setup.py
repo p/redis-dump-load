@@ -9,4 +9,5 @@ setup(name='redis-dump-load',
     author_email='oleg@bsdpower.com',
     url='http://github.com/p/redis-dump-load',
     py_modules=['redisdl'],
+    data_files=['LICENSE', 'README.rst'],
 )
