@@ -67,8 +67,8 @@ Now it can be used thusly::
     ./redis-load < dump.json
 
 Symlinks work as well. "load" in the executable name triggers the loading
-mode, otherwise the default is to dump and ``-l`` option switches into
-the loading mode.
+mode, "dump" triggers the dumping mode, otherwise the default is to dump
+and ``-l`` option switches into the loading mode.
 
 Dependencies
 ------------
