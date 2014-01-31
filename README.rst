@@ -42,6 +42,27 @@ Note that while ``dump`` will stream data, ``load`` currently will not
 (``load`` will read the entire file contents into a string, parse it,
 then walk the resulting data structure and load it into redis).
 
+Dump and load methods accept options as keyword arguments::
+
+    json_text = redisdl.dumps(encoding='iso-8859-1', pretty=True)
+
+The arguments should always be passed in as keyword, i.e, do not rely
+on the order in which the parameters are currently listed.
+The options are as follows:
+
+- ``host``: host name or IP address for redis server
+- ``port``: port number for redis server
+- ``unix_socket_path``: connect to redis via a Unix socket instead of TCP/IP;
+  specify the path to the socket
+- ``password``: specify password to connect to redis
+- ``db``: redis database to connect to (this is an integer)
+- ``encoding``: encoding to use for encoding or decoding the data, see
+  Unicode section below
+- ``pretty`` (dump only): produce a pretty-printed JSON which is easier
+  to read; currently this makes ``dump`` load entire data set into memory
+  rather than stream it
+- ``empty`` (load only): empty the redis data set before loading the data
+
 Command Line Usage
 ^^^^^^^^^^^^^^^^^^
 
@@ -49,9 +70,11 @@ Command Line Usage
 
     # dump database 0
     ./redisdl.py > dump.json
+    ./redisdl.py -o dump.json
 
     # load into database 0
     ./redisdl.py -l < dump.json
+    ./redisdl.py -l dump.json
 
 For convenience, ``redisdl.py`` can be hard or soft linked as follows::
 
@@ -62,13 +85,30 @@ Now it can be used thusly::
 
     # dump database 0
     ./redis-dump > dump.json
+    ./redis-dump -o dump.json
 
     # load into database 0
     ./redis-load < dump.json
+    ./redis-load dump.json
 
 Symlinks work as well. "load" in the executable name triggers the loading
 mode, "dump" triggers the dumping mode, otherwise the default is to dump
 and ``-l`` option switches into the loading mode.
+
+All options supported my the module API are accepted when redisdl is invoked
+as a command line tool. The command line options are:
+
+- ``-h``/``--help``: help text
+- ``-H HOST``/``--host HOST``: specify redis host
+- ``-p PORT``/``--port PORT``: specify redis port
+- ``-s SOCKET_PATH``/``--socket SOCKET_PATH``: connect to Unix socket at
+  the specified path
+- ``-w PASSWORD``/``--password PASSWORd``: password to use when connecting to redis
+- ``-d DATABASE``/``--db DATABASE``: redis database to connect to (integer)
+- ``-E ENCODING``/``-encoding ENCODING``: specify encoding to use
+- ``-o PATH``/``--output PATH``: write dump to PATH rather than standard output
+- ``-y``/``--pretty`` (dumping only): pretty-print JSON
+- ``-e``/``--empty`` (loading only): empty redis data set before loading
 
 Dependencies
 ------------
