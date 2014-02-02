@@ -1,4 +1,5 @@
 import redisdl
+import shutil
 import subprocess
 import unittest
 import json
@@ -19,13 +20,16 @@ class ProgramTest(unittest.TestCase):
         self.program = os.path.join(os.path.dirname(__file__), '..', 'redisdl.py')
 
     def test_dump(self):
+        self.check_dump(self.program)
+
+    def check_dump(self, program):
         path = os.path.join(os.path.dirname(__file__), 'fixtures', 'dump.json')
         with open(path) as f:
             dump = f.read()
 
         redisdl.loads(dump)
 
-        redump = check_output([self.program]).decode('utf-8')
+        redump = check_output([program]).decode('utf-8')
 
         expected = json.loads(dump)
         actual = json.loads(redump)
@@ -43,10 +47,13 @@ class ProgramTest(unittest.TestCase):
 
     def test_load(self):
         path = os.path.join(os.path.dirname(__file__), 'fixtures', 'dump.json')
+        self.check_load([self.program, '-l', path], path)
+
+    def check_load(self, cmd, path):
         with open(path) as f:
             dump = f.read()
 
-        subprocess.check_call([self.program, '-l', path])
+        subprocess.check_call(cmd)
 
         redump = redisdl.dumps()
 
@@ -68,3 +75,16 @@ class ProgramTest(unittest.TestCase):
 
         self.maxDiff = None
         self.assertEqual(unicode_dump, actual)
+    
+    @util.with_temp_dir
+    def test_dump_alias(self, tmp_dir):
+        aliased_program = os.path.join(tmp_dir, 'redisdump')
+        shutil.copy(self.program, aliased_program)
+        self.check_dump(aliased_program)
+    
+    @util.with_temp_dir
+    def test_load_alias(self, tmp_dir):
+        aliased_program = os.path.join(tmp_dir, 'redisload')
+        path = os.path.join(os.path.dirname(__file__), 'fixtures', 'dump.json')
+        shutil.copy(self.program, aliased_program)
+        self.check_load([aliased_program, path], path)

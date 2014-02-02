@@ -352,7 +352,7 @@ if __name__ == '__main__':
         parser.add_option('-E', '--encoding', help='set encoding to use while decoding data from redis', default='utf-8')
     options, args = parser.parse_args()
 
-    if options.load:
+    if hasattr(options, 'load') and options.load:
         action = LOAD
 
     if action == DUMP:

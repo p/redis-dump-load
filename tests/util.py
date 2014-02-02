@@ -58,3 +58,18 @@ def broken_on_python_3(issue_url):
         def decorator(fn):
             return fn
     return decorator
+
+def with_temp_dir(fn):
+    import tempfile
+    import shutil
+    import functools
+    
+    @functools.wraps(fn)
+    def decorated(self, *args, **kwargs):
+        dir = tempfile.mkdtemp()
+        try:
+            return fn(self, dir, *args, **kwargs)
+        finally:
+            shutil.rmtree(dir)
+    
+    return decorated
