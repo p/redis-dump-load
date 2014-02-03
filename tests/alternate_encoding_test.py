@@ -44,3 +44,18 @@ class RedisdlTest(unittest.TestCase):
         redisdl.loads(dump, encoding='utf-16')
         value = self.r.get(util.u('key'))
         self.assertEqual(util.b('\xff\xfeh\x00e\x00l\x00l\x00o\x00'), value)
+    
+    @util.broken_on_python_3('https://github.com/andymccurdy/redis-py/issues/430')
+    def test_empty_with_mixed_encodings(self):
+        r = redis.Redis(charset='utf-16')
+        r.set(util.u('key'), util.b('\xff\xfeh\x00e\x00l\x00l\x00o\x00'))
+        r = redis.Redis(charset='utf-8')
+        self.assertEqual(1, len(r.keys('*')))
+        try:
+            r.keys('*')[0].decode('utf-8')
+        except UnicodeDecodeError:
+            pass
+        else:
+            self.fail('Expected decoding in utf-8 to fail')
+        redisdl._empty(r)
+        self.assertEqual(0, len(r.keys('*')))

@@ -199,13 +199,16 @@ def _reader(r, pretty, encoding):
             # ran out of retries
             raise ConcurrentModificationError('Key %s is being concurrently modified' % key)
 
+def _empty(r):
+    for key in r.keys():
+        r.delete(key)
+
 def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
           unix_socket_path=None, encoding='utf-8'):
     r = client(host=host, port=port, password=password, db=db,
                unix_socket_path=unix_socket_path, encoding=encoding)
     if empty:
-        for key in r.keys():
-            r.delete(key)
+        _empty(r)
     table = json.loads(s)
     counter = 0
     for key in table:
