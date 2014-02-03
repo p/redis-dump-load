@@ -46,7 +46,7 @@ Dump and load methods accept options as keyword arguments::
 
     json_text = redisdl.dumps(encoding='iso-8859-1', pretty=True)
 
-The arguments should always be passed in as keyword, i.e, do not rely
+The arguments should always be passed in as keywords, i.e, do not rely
 on the order in which the parameters are currently listed.
 Options take string values unless otherwise noted. The options are as follows:
 
