@@ -129,10 +129,6 @@ By default redis-dump-load uses utf-8 for encoding and decoding.
 This behavior matches redis-py, whose default encoding is utf-8.
 A different encoding can be specified.
 
-Currently redis-py is broken on Python 3 with any encoding which is not a
-superset of ascii (https://github.com/andymccurdy/redis-py/issues/430).
-Data sets in such encodings can still be dumped and loaded on Python 2.
-
 Concurrent Modifications
 ------------------------
 

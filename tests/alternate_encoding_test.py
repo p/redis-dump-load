@@ -28,7 +28,6 @@ class RedisdlTest(unittest.TestCase):
 
     # utf-16 is not a superset of ascii
     # this tests that key type is correctly retrieved
-    @util.broken_on_python_3('https://github.com/andymccurdy/redis-py/issues/430')
     def test_dump_utf16(self):
         self.r = redis.Redis(charset='utf-16')
         self.r.set(util.u('key'), util.b('\xff\xfeh\x00e\x00l\x00l\x00o\x00'))
@@ -37,7 +36,6 @@ class RedisdlTest(unittest.TestCase):
         expected = {'key': {'type': 'string', 'value': util.u("hello")}}
         self.assertEqual(expected, actual)
 
-    @util.broken_on_python_3('https://github.com/andymccurdy/redis-py/issues/430')
     def test_load_utf16(self):
         self.r = redis.Redis(charset='utf-16')
         dump = '{"key":{"type":"string","value":"hello"}}'
@@ -45,7 +43,6 @@ class RedisdlTest(unittest.TestCase):
         value = self.r.get(util.u('key'))
         self.assertEqual(util.b('\xff\xfeh\x00e\x00l\x00l\x00o\x00'), value)
     
-    @util.broken_on_python_3('https://github.com/andymccurdy/redis-py/issues/430')
     def test_empty_with_mixed_encodings(self):
         r = redis.Redis(charset='utf-16')
         r.set(util.u('key'), util.b('\xff\xfeh\x00e\x00l\x00l\x00o\x00'))
