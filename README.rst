@@ -133,6 +133,8 @@ either pass the desired backend as follows::
 Note: yajl2 backend fails when it is given strings on Python 3. Please open
 the files in binary mode and use ``BytesIO`` rather than ``StringIO`` objects.
 
+Note: streaming loading is substantially slower than lump loading.
+
 Dependencies
 ------------
 
