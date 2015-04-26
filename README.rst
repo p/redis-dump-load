@@ -122,11 +122,11 @@ redis-dump-load supports streaming data load, examine
 
 Default ijson streaming backend is ``python`` and ijson does not autoselect
 backends based on installed json libraries. To use a non-default ijson backend,
-either pass the desired backend as follows:
+either pass the desired backend as follows::
 
     redisdl.load(io, streaming_backend='yajl2')
 
-... or set the desired backend globally as follows:
+... or set the desired backend globally as follows::
 
     redisdl.streaming_backend = 'yajl2'
 
@@ -160,12 +160,12 @@ affect the contents of the dump.
 Tests
 -----
 
-redis-dump-load has a test suite. To run it, install nose_ and run:
+redis-dump-load has a test suite. To run it, install nose_ and run::
 
     nosetests
 
 There are several tests that check for race conditions and as such take
-a long time to run. To skip them, invoke nose thusly:
+a long time to run. To skip them, invoke nose thusly::
 
     nosetests -a '!slow'
 
