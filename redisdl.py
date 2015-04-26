@@ -9,10 +9,12 @@ import sys
 import functools
 
 try:
-    import ijson
+    import ijson as ijson_root
     have_streaming_load = True
+    streaming_backend = 'python'
 except ImportError:
     have_streaming_load = False
+    streaming_backend = None
 
 py3 = sys.version_info[0] == 3
 
@@ -245,7 +247,17 @@ def load_lump(fp, host='localhost', port=6379, password=None, db=0,
             s = s.decode(encoding)
     loads(s, host, port, password, db, empty, unix_socket_path, encoding)
 
-def ijson_top_level_items(file):
+def get_ijson(local_streaming_backend):
+    local_streaming_backend = local_streaming_backend or streaming_backend
+    if local_streaming_backend:
+        __import__('ijson.backends.%s' % local_streaming_backend)
+        ijson = getattr(ijson_root.backends, local_streaming_backend)
+    else:
+        ijson = ijson_root
+    return ijson
+
+def ijson_top_level_items(file, local_streaming_backend):
+    ijson = get_ijson(local_streaming_backend)
     parser = ijson.parse(file)
     prefixed_events = iter(parser)
     wanted = None
@@ -255,7 +267,7 @@ def ijson_top_level_items(file):
             if current != '':
                 wanted = current
                 if event in ('start_map', 'start_array'):
-                    builder = ijson.ObjectBuilder()
+                    builder = ijson_root.ObjectBuilder()
                     end_event = event.replace('start', 'end')
                     while (current, event) != (wanted, end_event):
                         builder.event(event, value)
@@ -266,12 +278,13 @@ def ijson_top_level_items(file):
 
 def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
     empty=False, unix_socket_path=None, encoding='utf-8',
+    streaming_backend=None,
 ):
     r = client(host=host, port=port, password=password, db=db,
                unix_socket_path=unix_socket_path, encoding=encoding)
     
     counter = 0
-    for key, item in ijson_top_level_items(fp):
+    for key, item in ijson_top_level_items(fp, streaming_backend):
         # Create pipeline:
         if not counter:
             p = r.pipeline(transaction=False)
@@ -289,10 +302,12 @@ def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
 
 def load(fp, host='localhost', port=6379, password=None, db=0,
     empty=False, unix_socket_path=None, encoding='utf-8',
+    streaming_backend=None,
 ):
     if have_streaming_load:
         load_streaming(fp, host=host, port=port, password=password, db=db,
-            empty=empty, unix_socket_path=unix_socket_path, encoding=encoding)
+            empty=empty, unix_socket_path=unix_socket_path, encoding=encoding,
+            streaming_backend=streaming_backend)
     else:
         load_lump(fp, host=host, port=port, password=password, db=db,
             empty=empty, unix_socket_path=unix_socket_path, encoding=encoding)

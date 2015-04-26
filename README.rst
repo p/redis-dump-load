@@ -60,6 +60,8 @@ Options take string values unless otherwise noted. The options are as follows:
   memory rather than stream it
 - ``empty`` (boolean, load only): empty the redis data set before loading the
   data
+- ``streaming_backend`` (string): ijson_ backend to use when loading via
+  ``load`` method, if ijson is installed and streaming is thus used
 
 Command Line Usage
 ^^^^^^^^^^^^^^^^^^
@@ -116,6 +118,16 @@ Streaming
 ``load`` will stream data if ijson_ is installed. To determine whether
 redis-dump-load supports streaming data load, examine
 ``redisdl.has_streaming_load`` variable.
+
+Default ijson streaming backend is ``python`` and ijson does not autoselect
+backends based on installed json libraries. To use a non-default ijson backend,
+either pass the desired backend as follows:
+
+    redisdl.load(io, streaming_backend='yajl2')
+
+... or set the desired backend globally as follows:
+
+    redisdl.streaming_backend = 'yajl2'
 
 Dependencies
 ------------

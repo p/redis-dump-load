@@ -55,8 +55,28 @@ class ModuleTest(unittest.TestCase):
         value = self.r.get('key')
         self.assertEqual(util.b('\xd0\x9c\xd0\xbe\xd1\x81\xd0\xba\xd0\xb2\xd0\xb0'), value)
 
-    def test_load_stringio(self):
+    def test_load_stringio_python_backend_global(self):
         self.assertTrue(redisdl.have_streaming_load)
+        redisdl.streaming_backend = 'python'
+        
+        dump = '{"key":{"type":"string","value":"hello, world"}}'
+        io = StringIO(dump)
+        redisdl.load(io)
+        value = self.r.get('key')
+        self.assertEqual('hello, world', value.decode('ascii'))
+
+    def test_load_stringio_python_backend_local(self):
+        self.assertTrue(redisdl.have_streaming_load)
+        
+        dump = '{"key":{"type":"string","value":"hello, world"}}'
+        io = StringIO(dump)
+        redisdl.load(io, streaming_backend='python')
+        value = self.r.get('key')
+        self.assertEqual('hello, world', value.decode('ascii'))
+
+    def test_load_stringio_no_backend(self):
+        self.assertTrue(redisdl.have_streaming_load)
+        redisdl.streaming_backend = None
         
         dump = '{"key":{"type":"string","value":"hello, world"}}'
         io = StringIO(dump)
@@ -85,5 +105,16 @@ class ModuleTest(unittest.TestCase):
             dump = '{"key":{"type":"string","value":"hello, world"}}'
             io = BytesIO(dump.encode('utf-8'))
             redisdl.load_lump(io)
+            value = self.r.get('key')
+            self.assertEqual('hello, world', value.decode('ascii'))
+
+        # yajl2 backend does not appear to be capable of loading stringios
+        def test_load_bytesio_yajl2_backend(self):
+            self.assertTrue(redisdl.have_streaming_load)
+            redisdl.streaming_backend = 'yajl2'
+            
+            dump = '{"key":{"type":"string","value":"hello, world"}}'
+            io = BytesIO(dump.encode('utf-8'))
+            redisdl.load(io)
             value = self.r.get('key')
             self.assertEqual('hello, world', value.decode('ascii'))
