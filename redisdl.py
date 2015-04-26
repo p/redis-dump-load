@@ -8,6 +8,12 @@ import redis
 import sys
 import functools
 
+try:
+    import ijson
+    have_streaming_load = True
+except ImportError:
+    have_streaming_load = False
+
 py3 = sys.version_info[0] == 3
 
 if py3:
@@ -228,10 +234,68 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
         # Finally, execute again:
         p.execute()
 
-def load(fp, host='localhost', port=6379, password=None, db=0, empty=False,
-         unix_socket_path=None, encoding='utf-8'):
+def load_lump(fp, host='localhost', port=6379, password=None, db=0,
+    empty=False, unix_socket_path=None, encoding='utf-8',
+):
     s = fp.read()
+    if py3:
+        # s can be a string or a bytes instance.
+        # if bytes, decode to a string because loads requires input to be a string.
+        if isinstance(s, bytes):
+            s = s.decode(encoding)
     loads(s, host, port, password, db, empty, unix_socket_path, encoding)
+
+def ijson_top_level_items(file):
+    parser = ijson.parse(file)
+    prefixed_events = iter(parser)
+    wanted = None
+    try:
+        while True:
+            current, event, value = next(prefixed_events)
+            if current != '':
+                wanted = current
+                if event in ('start_map', 'start_array'):
+                    builder = ijson.ObjectBuilder()
+                    end_event = event.replace('start', 'end')
+                    while (current, event) != (wanted, end_event):
+                        builder.event(event, value)
+                        current, event, value = next(prefixed_events)
+                    yield current, builder.value
+    except StopIteration:
+        pass
+
+def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
+    empty=False, unix_socket_path=None, encoding='utf-8',
+):
+    r = client(host=host, port=port, password=password, db=db,
+               unix_socket_path=unix_socket_path, encoding=encoding)
+    
+    counter = 0
+    for key, item in ijson_top_level_items(fp):
+        # Create pipeline:
+        if not counter:
+            p = r.pipeline(transaction=False)
+        type = item['type']
+        value = item['value']
+        _writer(p, key, type, value)
+        # Increase counter until 10 000...
+        counter = (counter + 1) % 10000
+        # ... then execute:
+        if not counter:
+            p.execute()
+    if counter:
+        # Finally, execute again:
+        p.execute()
+
+def load(fp, host='localhost', port=6379, password=None, db=0,
+    empty=False, unix_socket_path=None, encoding='utf-8',
+):
+    if have_streaming_load:
+        load_streaming(fp, host=host, port=port, password=password, db=db,
+            empty=empty, unix_socket_path=unix_socket_path, encoding=encoding)
+    else:
+        load_lump(fp, host=host, port=port, password=password, db=db,
+            empty=empty, unix_socket_path=unix_socket_path, encoding=encoding)
 
 def _writer(r, key, type, value):
     r.delete(key)

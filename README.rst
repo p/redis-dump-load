@@ -35,12 +35,10 @@ redis-dump-load exports a pickle_-like interface, namely ``load``,
     redisdl.loads(json_text)
 
     with open('path/to/dump.json') as f:
-        # currently does not stream data
+        # streams data if ijson is installed
         redisdl.load(f)
 
-Note that while ``dump`` will stream data, ``load`` currently will not
-(``load`` will read the entire file contents into a string, parse it,
-then walk the resulting data structure and load it into redis).
+See the streaming section below for more information about streaming.
 
 Dump and load methods accept options as keyword arguments::
 
@@ -111,10 +109,20 @@ as a command line tool. The command line options are:
 - ``-y``/``--pretty`` (dumping only): pretty-print JSON
 - ``-e``/``--empty`` (loading only): empty redis data set before loading
 
+Streaming
+---------
+
+``dump`` will stream data unless ``pretty`` is given and ``True``.
+
+``load`` will stream data if ijson_ is installed. To determine whether
+redis-dump-load supports streaming data load, examine
+``redisdl.has_streaming_load`` variable.
+
 Dependencies
 ------------
 
 - redis-py_
+- ijson_ (optional, for streaming load)
 - simplejson_ (Python 2.5 only)
 
 Unicode
@@ -159,3 +167,4 @@ Released under the 2 clause BSD license.
 .. _simplejson: http://pypi.python.org/pypi/simplejson/
 .. _pickle: http://docs.python.org/library/pickle.html
 .. _nose: https://nose.readthedocs.org/en/latest/
+.. _ijson: https://pypi.python.org/pypi/ijson

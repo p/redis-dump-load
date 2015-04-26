@@ -3,6 +3,10 @@ import unittest
 import json
 import os.path
 from . import util
+try:
+    from io import StringIO, BytesIO
+except ImportError:
+    from StringIO import StringIO
 
 class ModuleTest(unittest.TestCase):
     def setUp(self):
@@ -50,3 +54,36 @@ class ModuleTest(unittest.TestCase):
         redisdl.loads(dump)
         value = self.r.get('key')
         self.assertEqual(util.b('\xd0\x9c\xd0\xbe\xd1\x81\xd0\xba\xd0\xb2\xd0\xb0'), value)
+
+    def test_load_stringio(self):
+        self.assertTrue(redisdl.have_streaming_load)
+        
+        dump = '{"key":{"type":"string","value":"hello, world"}}'
+        io = StringIO(dump)
+        redisdl.load(io)
+        value = self.r.get('key')
+        self.assertEqual('hello, world', value.decode('ascii'))
+
+    def test_load_stringio_lump(self):
+        dump = '{"key":{"type":"string","value":"hello, world"}}'
+        io = StringIO(dump)
+        redisdl.load_lump(io)
+        value = self.r.get('key')
+        self.assertEqual('hello, world', value.decode('ascii'))
+    
+    if redisdl.py3:
+        def test_load_bytesio(self):
+            self.assertTrue(redisdl.have_streaming_load)
+            
+            dump = '{"key":{"type":"string","value":"hello, world"}}'
+            io = BytesIO(dump.encode('utf-8'))
+            redisdl.load(io)
+            value = self.r.get('key')
+            self.assertEqual('hello, world', value.decode('ascii'))
+        
+        def test_load_bytesio_lump(self):
+            dump = '{"key":{"type":"string","value":"hello, world"}}'
+            io = BytesIO(dump.encode('utf-8'))
+            redisdl.load_lump(io)
+            value = self.r.get('key')
+            self.assertEqual('hello, world', value.decode('ascii'))
