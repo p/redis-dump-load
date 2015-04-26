@@ -7,8 +7,7 @@ redis-dump-load
 Dumps Redis data sets into a format suitable for long-term storage
 (currently JSON) and loads data from such dump files back into Redis.
 
-redis-dump_ was there first, but
-it is written in Ruby.
+redis-dump_ was there first, but it is written in Ruby.
 
 The output format is intended to be compatible with redis-dump.
 
