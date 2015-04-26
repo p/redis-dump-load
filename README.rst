@@ -130,6 +130,9 @@ either pass the desired backend as follows::
 
     redisdl.streaming_backend = 'yajl2'
 
+Note: yajl2 backend fails when it is given strings on Python 3. Please open
+the files in binary mode and use ``BytesIO`` rather than ``StringIO`` objects.
+
 Dependencies
 ------------
 
