@@ -109,6 +109,7 @@ as a command line tool. The command line options are:
 - ``-o PATH``/``--output PATH``: write dump to PATH rather than standard output
 - ``-y``/``--pretty`` (dumping only): pretty-print JSON
 - ``-e``/``--empty`` (loading only): empty redis data set before loading
+- ``-B BACKEND``/``--backend BACKEND`` (loading only): ijson streaming backend to use
 
 Streaming
 ---------

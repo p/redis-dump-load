@@ -11,10 +11,9 @@ import functools
 try:
     import ijson as ijson_root
     have_streaming_load = True
-    streaming_backend = 'python'
 except ImportError:
     have_streaming_load = False
-    streaming_backend = None
+streaming_backend = None
 
 py3 = sys.version_info[0] == 3
 
@@ -359,6 +358,8 @@ if __name__ == '__main__':
         # load only
         if hasattr(options, 'empty') and options.empty:
             args['empty'] = True
+        if hasattr(options, 'backend') and options.backend:
+            args['streaming_backend'] = options.backend
         return args
 
     def do_dump(options):
@@ -375,7 +376,7 @@ if __name__ == '__main__':
 
     def do_load(options, args):
         if len(args) > 0:
-            input = open(args[0], 'r')
+            input = open(args[0], 'rb')
         else:
             input = sys.stdin
 
@@ -425,6 +426,7 @@ if __name__ == '__main__':
         parser.add_option('-d', '--db', help='load into DATABASE (0-N, default 0)')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading')
         parser.add_option('-E', '--encoding', help='set encoding to use while encoding data to redis', default='utf-8')
+        parser.add_option('-B', '--backend', help='use specified ijson backend, default is pure Python')
     else:
         parser.add_option('-l', '--load', help='load data into redis (default is to dump data from redis)', action='store_true')
         parser.add_option('-d', '--db', help='dump or load into DATABASE (0-N, default 0)')
@@ -432,6 +434,7 @@ if __name__ == '__main__':
         parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it (dump mode only)', action='store_true')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading (load mode only)', action='store_true')
         parser.add_option('-E', '--encoding', help='set encoding to use while decoding data from redis', default='utf-8')
+        parser.add_option('-B', '--backend', help='use specified ijson backend, default is pure Python (load mode only)')
     options, args = parser.parse_args()
 
     if hasattr(options, 'load') and options.load:
