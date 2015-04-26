@@ -96,7 +96,7 @@ Symlinks work as well. "load" in the executable name triggers the loading
 mode, "dump" triggers the dumping mode, otherwise the default is to dump
 and ``-l`` option switches into the loading mode.
 
-All options supported my the module API are accepted when redisdl is invoked
+All options supported by the module API are accepted when redisdl is invoked
 as a command line tool. The command line options are:
 
 - ``-h``/``--help``: help text
