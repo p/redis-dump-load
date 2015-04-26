@@ -104,7 +104,7 @@ as a command line tool. The command line options are:
 - ``-p PORT``/``--port PORT``: specify redis port
 - ``-s SOCKET_PATH``/``--socket SOCKET_PATH``: connect to Unix socket at
   the specified path
-- ``-w PASSWORD``/``--password PASSWORd``: password to use when connecting to redis
+- ``-w PASSWORD``/``--password PASSWORD``: password to use when connecting to redis
 - ``-d DATABASE``/``--db DATABASE``: redis database to connect to (integer)
 - ``-E ENCODING``/``-encoding ENCODING``: specify encoding to use
 - ``-o PATH``/``--output PATH``: write dump to PATH rather than standard output
