@@ -135,13 +135,6 @@ the files in binary mode and use ``BytesIO`` rather than ``StringIO`` objects.
 
 Note: streaming loading is substantially slower than lump loading.
 
-Dependencies
-------------
-
-- redis-py_
-- ijson_ (optional, for streaming load)
-- simplejson_ (Python 2.5 only)
-
 Unicode
 -------
 
@@ -161,6 +154,13 @@ redis-dump-load does not lock the entire data set it is dumping,
 because Redis does not provide a way to do so.
 As a result, modifications to the data set made while a dump is in progress
 affect the contents of the dump.
+
+Dependencies
+------------
+
+- redis-py_
+- ijson_ (optional, for streaming load)
+- simplejson_ (Python 2.5 only)
 
 Tests
 -----
