@@ -137,6 +137,18 @@ because Redis does not provide a way to do so.
 As a result, modifications to the data set made while a dump is in progress
 affect the contents of the dump.
 
+Tests
+-----
+
+redis-dump-load has a test suite. To run it, install nose_ and run:
+
+    nosetests
+
+There are several tests that check for race conditions and as such take
+a long time to run. To skip them, invoke nose thusly:
+
+    nosetests -a '!slow'
+
 License
 -------
 
@@ -146,3 +158,4 @@ Released under the 2 clause BSD license.
 .. _redis-py: https://github.com/andymccurdy/redis-py
 .. _simplejson: http://pypi.python.org/pypi/simplejson/
 .. _pickle: http://docs.python.org/library/pickle.html
+.. _nose: https://nose.readthedocs.org/en/latest/
