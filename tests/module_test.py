@@ -9,6 +9,13 @@ if redisdl.py3:
 else:
     from StringIO import StringIO
 
+try:
+    import ijson as ijson_root
+    have_streaming_load = True
+except ImportError:
+    have_streaming_load = False
+
+
 class ModuleTest(unittest.TestCase):
     def setUp(self):
         import redis
@@ -57,7 +64,8 @@ class ModuleTest(unittest.TestCase):
         self.assertEqual(util.b('\xd0\x9c\xd0\xbe\xd1\x81\xd0\xba\xd0\xb2\xd0\xb0'), value)
 
     def test_load_stringio_python_backend_global(self):
-        self.assertTrue(redisdl.have_streaming_load)
+        if have_streaming_load:
+            self.assertTrue(redisdl.have_streaming_load)
         redisdl.streaming_backend = 'python'
         
         dump = '{"key":{"type":"string","value":"hello, world"}}'
@@ -67,7 +75,8 @@ class ModuleTest(unittest.TestCase):
         self.assertEqual('hello, world', value.decode('ascii'))
 
     def test_load_stringio_python_backend_local(self):
-        self.assertTrue(redisdl.have_streaming_load)
+        if have_streaming_load:
+            self.assertTrue(redisdl.have_streaming_load)
         
         dump = '{"key":{"type":"string","value":"hello, world"}}'
         io = StringIO(dump)
@@ -76,7 +85,8 @@ class ModuleTest(unittest.TestCase):
         self.assertEqual('hello, world', value.decode('ascii'))
 
     def test_load_stringio_no_backend(self):
-        self.assertTrue(redisdl.have_streaming_load)
+        if have_streaming_load:
+            self.assertTrue(redisdl.have_streaming_load)
         redisdl.streaming_backend = None
         
         dump = '{"key":{"type":"string","value":"hello, world"}}'
