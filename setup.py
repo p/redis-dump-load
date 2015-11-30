@@ -20,4 +20,17 @@ setup(name=package_name,
     data_files=[
         (doc_dir, data_files),
     ],
+    license="BSD",
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'Intended Audience :: System Administrators',
+        'License :: OSI Approved :: BSD License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
+        'Topic :: Database',
+        'Topic :: System :: Archiving',
+    ],
 )
