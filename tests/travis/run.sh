@@ -1,6 +1,8 @@
 #!/bin/sh
 
-NOSETESTS = nosetests
+set -e
+
+NOSETESTS=nosetests
 
 if test "$TEST" = slow; then
   $(NOSETESTS) -a '!yajl2,slow'
