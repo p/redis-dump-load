@@ -1,3 +1,4 @@
+import nose.plugins.attrib
 import redisdl
 import shutil
 import subprocess
@@ -49,6 +50,7 @@ class ProgramTest(unittest.TestCase):
         path = os.path.join(os.path.dirname(__file__), 'fixtures', 'dump.json')
         self.check_load([self.program, '-l', path], path)
 
+    @nose.plugins.attrib.attr('yajl2')
     def test_load_yajl2(self):
         path = os.path.join(os.path.dirname(__file__), 'fixtures', 'dump.json')
         self.check_load([self.program, '-l', '-B', 'yajl2', path], path)

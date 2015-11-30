@@ -1,11 +1,12 @@
+import nose.plugins.attrib
 import redisdl
 import unittest
 import json
 import os.path
 from . import util
-try:
+if redisdl.py3:
     from io import StringIO, BytesIO
-except ImportError:
+else:
     from StringIO import StringIO
 
 class ModuleTest(unittest.TestCase):
@@ -108,7 +109,8 @@ class ModuleTest(unittest.TestCase):
             value = self.r.get('key')
             self.assertEqual('hello, world', value.decode('ascii'))
 
-        # yajl2 backend does not appear to be capable of loading stringios
+        # yajl2 backend does not appear to be capable of loading StringIOs
+        @nose.plugins.attrib.attr('yajl2')
         def test_load_bytesio_yajl2_backend(self):
             self.assertTrue(redisdl.have_streaming_load)
             redisdl.streaming_backend = 'yajl2'
