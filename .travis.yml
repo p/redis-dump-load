@@ -20,6 +20,6 @@ matrix:
 services:
   - redis-server
 install: >
-  pip install -r requirements-dev.txt --use-mirrors
+  pip install -r requirements-dev.txt
 script: >
   ./tests/travis/run.sh
