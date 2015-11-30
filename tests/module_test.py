@@ -4,9 +4,9 @@ import unittest
 import json
 import os.path
 from . import util
-try:
+if redisdl.py3:
     from io import StringIO, BytesIO
-except ImportError:
+else:
     from StringIO import StringIO
 
 class ModuleTest(unittest.TestCase):
