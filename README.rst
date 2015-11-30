@@ -118,7 +118,7 @@ Streaming
 
 ``load`` will stream data if ijson_ is installed. To determine whether
 redis-dump-load supports streaming data load, examine
-``redisdl.has_streaming_load`` variable.
+``redisdl.have_streaming_load`` variable.
 
 Default ijson streaming backend is ``python`` and ijson does not autoselect
 backends based on installed json libraries. To use a non-default ijson backend,
