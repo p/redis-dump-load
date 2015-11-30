@@ -1,7 +1,13 @@
 #!/bin/sh
 
+NOSETESTS = nosetests
+
 if test "$TEST" = slow; then
-  make test-slow
+  $(NOSETESTS) -a '!yajl2,slow'
 else
-  make test-quick
+  $(NOSETESTS) -a '!yajl2,!slow'
+fi
+
+if test -n "$YAJL2"; then
+  $(NOSETESTS) -a 'yajl2,!slow'
 fi
