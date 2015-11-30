@@ -10,9 +10,9 @@ import functools
 
 try:
     import ijson as ijson_root
-    have_streaming_load = True
+    has_streaming_load = True
 except ImportError:
-    have_streaming_load = False
+    has_streaming_load = False
 streaming_backend = None
 
 py3 = sys.version_info[0] == 3
@@ -303,7 +303,7 @@ def load(fp, host='localhost', port=6379, password=None, db=0,
     empty=False, unix_socket_path=None, encoding='utf-8',
     streaming_backend=None,
 ):
-    if have_streaming_load:
+    if has_streaming_load:
         load_streaming(fp, host=host, port=port, password=password, db=db,
             empty=empty, unix_socket_path=unix_socket_path, encoding=encoding,
             streaming_backend=streaming_backend)
