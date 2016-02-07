@@ -421,10 +421,10 @@ if __name__ == '__main__':
     parser.add_option('-w', '--password', help='connect with PASSWORD')
     if help == DUMP:
         parser.add_option('-d', '--db', help='dump DATABASE (0-N, default 0)')
+        parser.add_option('-k', '--keys', help='dump only keys matching specified glob-style pattern')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout')
         parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it', action='store_true')
         parser.add_option('-E', '--encoding', help='set encoding to use while decoding data from redis', default='utf-8')
-        parser.add_option('-k', '--keys', help='set glob-style pattern matching keys of values to dump from redis')
     elif help == LOAD:
         parser.add_option('-d', '--db', help='load into DATABASE (0-N, default 0)')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading')
@@ -433,12 +433,12 @@ if __name__ == '__main__':
     else:
         parser.add_option('-l', '--load', help='load data into redis (default is to dump data from redis)', action='store_true')
         parser.add_option('-d', '--db', help='dump or load into DATABASE (0-N, default 0)')
+        parser.add_option('-k', '--keys', help='dump only keys matching specified glob-style pattern')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout (dump mode only)')
         parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it (dump mode only)', action='store_true')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading (load mode only)', action='store_true')
         parser.add_option('-E', '--encoding', help='set encoding to use while decoding data from redis', default='utf-8')
         parser.add_option('-B', '--backend', help='use specified ijson backend, default is pure Python (load mode only)')
-        parser.add_option('-k', '--keys', help='set glob-style pattern matching keys of values to dump from redis')
     options, args = parser.parse_args()
 
     if hasattr(options, 'load') and options.load:
