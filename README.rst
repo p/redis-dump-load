@@ -105,6 +105,7 @@ as a command line tool. The command line options are:
   the specified path
 - ``-w PASSWORD``/``--password PASSWORD``: password to use when connecting to redis
 - ``-d DATABASE``/``--db DATABASE``: redis database to connect to (integer)
+- ``-k PATTERN``/``--keys PATTERN`` (dumping only): dump only keys matching specified glob-style pattern
 - ``-E ENCODING``/``-encoding ENCODING``: specify encoding to use
 - ``-o PATH``/``--output PATH``: write dump to PATH rather than standard output
 - ``-y``/``--pretty`` (dumping only): pretty-print JSON

@@ -126,3 +126,11 @@ class ModuleTest(unittest.TestCase):
             redisdl.load(io)
             value = self.r.get('key')
             self.assertEqual('hello, world', value.decode('ascii'))
+
+    def test_dump_specified_keys(self):
+        self.r.set('key', 'value')
+        self.r.set('ignore_key', 'value')
+        dump = redisdl.dumps(keys='k*')
+        actual = json.loads(dump)
+        expected = {'key': {'type': 'string', 'value': 'value'}}
+        self.assertEqual(expected, actual)

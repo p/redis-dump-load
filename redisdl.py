@@ -52,7 +52,7 @@ def client(host='localhost', port=6379, password=None, db=0,
     return r
 
 def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
-          unix_socket_path=None, encoding='utf-8'):
+          unix_socket_path=None, encoding='utf-8', keys='*'):
     r = client(host=host, port=port, password=password, db=db,
                unix_socket_path=unix_socket_path, encoding=encoding)
     kwargs = {}
@@ -63,12 +63,12 @@ def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
         kwargs['sort_keys'] = True
     encoder = json.JSONEncoder(**kwargs)
     table = {}
-    for key, type, value in _reader(r, pretty, encoding):
+    for key, type, value in _reader(r, pretty, encoding, keys):
         table[key] = {'type': type, 'value': value}
     return encoder.encode(table)
 
 def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
-         unix_socket_path=None, encoding='utf-8'):
+         unix_socket_path=None, encoding='utf-8', keys='*'):
     if pretty:
         # hack to avoid implementing pretty printing
         fp.write(dumps(host=host, port=port, password=password, db=db,
@@ -86,7 +86,7 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
     encoder = json.JSONEncoder(**kwargs)
     fp.write('{')
     first = True
-    for key, type, value in _reader(r, pretty, encoding):
+    for key, type, value in _reader(r, pretty, encoding, keys):
         key = encoder.encode(key)
         type = encoder.encode(type)
         value = encoder.encode(value)
@@ -182,8 +182,8 @@ def _read_key(key, r, pretty, encoding):
     value = reader.handle_response(results[1], pretty, encoding)
     return (type, value)
 
-def _reader(r, pretty, encoding):
-    for encoded_key in r.keys():
+def _reader(r, pretty, encoding, keys='*'):
+    for encoded_key in r.keys(keys):
         key = encoded_key.decode(encoding)
         handled = False
         for i in range(10):
@@ -281,7 +281,7 @@ def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
 ):
     r = client(host=host, port=port, password=password, db=db,
                unix_socket_path=unix_socket_path, encoding=encoding)
-    
+
     counter = 0
     for key, item in ijson_top_level_items(fp, streaming_backend):
         # Create pipeline:
@@ -355,6 +355,8 @@ if __name__ == '__main__':
         # dump only
         if hasattr(options, 'pretty') and options.pretty:
             args['pretty'] = True
+        if hasattr(options, 'keys') and options.keys:
+            args['keys'] = options.keys
         # load only
         if hasattr(options, 'empty') and options.empty:
             args['empty'] = True
@@ -419,6 +421,7 @@ if __name__ == '__main__':
     parser.add_option('-w', '--password', help='connect with PASSWORD')
     if help == DUMP:
         parser.add_option('-d', '--db', help='dump DATABASE (0-N, default 0)')
+        parser.add_option('-k', '--keys', help='dump only keys matching specified glob-style pattern')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout')
         parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it', action='store_true')
         parser.add_option('-E', '--encoding', help='set encoding to use while decoding data from redis', default='utf-8')
@@ -430,6 +433,7 @@ if __name__ == '__main__':
     else:
         parser.add_option('-l', '--load', help='load data into redis (default is to dump data from redis)', action='store_true')
         parser.add_option('-d', '--db', help='dump or load into DATABASE (0-N, default 0)')
+        parser.add_option('-k', '--keys', help='dump only keys matching specified glob-style pattern')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout (dump mode only)')
         parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it (dump mode only)', action='store_true')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading (load mode only)', action='store_true')
