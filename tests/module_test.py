@@ -9,12 +9,6 @@ if redisdl.py3:
 else:
     from StringIO import StringIO
 
-try:
-    import ijson as ijson_root
-    have_streaming_load = True
-except ImportError:
-    have_streaming_load = False
-
 
 class ModuleTest(unittest.TestCase):
     def setUp(self):
@@ -63,32 +57,32 @@ class ModuleTest(unittest.TestCase):
         value = self.r.get('key')
         self.assertEqual(util.b('\xd0\x9c\xd0\xbe\xd1\x81\xd0\xba\xd0\xb2\xd0\xb0'), value)
 
+    @util.requires_ijson
     def test_load_stringio_python_backend_global(self):
-        if have_streaming_load:
-            self.assertTrue(redisdl.have_streaming_load)
+        self.assertTrue(redisdl.have_streaming_load)
         redisdl.streaming_backend = 'python'
-        
+
         dump = '{"key":{"type":"string","value":"hello, world"}}'
         io = StringIO(dump)
         redisdl.load(io)
         value = self.r.get('key')
         self.assertEqual('hello, world', value.decode('ascii'))
 
+    @util.requires_ijson
     def test_load_stringio_python_backend_local(self):
-        if have_streaming_load:
-            self.assertTrue(redisdl.have_streaming_load)
-        
+        self.assertTrue(redisdl.have_streaming_load)
+
         dump = '{"key":{"type":"string","value":"hello, world"}}'
         io = StringIO(dump)
         redisdl.load(io, streaming_backend='python')
         value = self.r.get('key')
         self.assertEqual('hello, world', value.decode('ascii'))
 
+    @util.requires_ijson
     def test_load_stringio_no_backend(self):
-        if have_streaming_load:
-            self.assertTrue(redisdl.have_streaming_load)
+        self.assertTrue(redisdl.have_streaming_load)
         redisdl.streaming_backend = None
-        
+
         dump = '{"key":{"type":"string","value":"hello, world"}}'
         io = StringIO(dump)
         redisdl.load(io)
@@ -101,17 +95,18 @@ class ModuleTest(unittest.TestCase):
         redisdl.load_lump(io)
         value = self.r.get('key')
         self.assertEqual('hello, world', value.decode('ascii'))
-    
+
     if redisdl.py3:
+        @util.requires_ijson
         def test_load_bytesio(self):
             self.assertTrue(redisdl.have_streaming_load)
-            
+
             dump = '{"key":{"type":"string","value":"hello, world"}}'
             io = BytesIO(dump.encode('utf-8'))
             redisdl.load(io)
             value = self.r.get('key')
             self.assertEqual('hello, world', value.decode('ascii'))
-        
+
         def test_load_bytesio_lump(self):
             dump = '{"key":{"type":"string","value":"hello, world"}}'
             io = BytesIO(dump.encode('utf-8'))
@@ -120,11 +115,12 @@ class ModuleTest(unittest.TestCase):
             self.assertEqual('hello, world', value.decode('ascii'))
 
         # yajl2 backend does not appear to be capable of loading StringIOs
+        @util.requires_ijson
         @nose.plugins.attrib.attr('yajl2')
         def test_load_bytesio_yajl2_backend(self):
             self.assertTrue(redisdl.have_streaming_load)
             redisdl.streaming_backend = 'yajl2'
-            
+
             dump = '{"key":{"type":"string","value":"hello, world"}}'
             io = BytesIO(dump.encode('utf-8'))
             redisdl.load(io)

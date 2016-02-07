@@ -1,4 +1,12 @@
+import nose.plugins.skip
+import functools
 import sys
+
+try:
+    import ijson as ijson_root
+    have_ijson = True
+except ImportError:
+    have_ijson = False
 
 py3 = sys.version_info[0] == 3
 
@@ -48,7 +56,7 @@ def with_temp_dir(fn):
     import tempfile
     import shutil
     import functools
-    
+
     @functools.wraps(fn)
     def decorated(self, *args, **kwargs):
         dir = tempfile.mkdtemp()
@@ -56,5 +64,13 @@ def with_temp_dir(fn):
             return fn(self, dir, *args, **kwargs)
         finally:
             shutil.rmtree(dir)
-    
+
+    return decorated
+
+def requires_ijson(fn):
+    @functools.wraps(fn)
+    def decorated(*args, **kwargs):
+        if not have_ijson:
+            raise nose.plugins.skip.SkipTest('ijson is not present')
+        return fn(*args, **kwargs)
     return decorated
