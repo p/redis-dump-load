@@ -329,7 +329,7 @@ def _writer(r, key, type, value):
     else:
         raise UnknownTypeError("Unknown key type: %s" % type)
 
-if __name__ == '__main__':
+def main():
     import optparse
     import os.path
     import re
@@ -454,3 +454,7 @@ if __name__ == '__main__':
             parser.print_help()
             exit(4)
         do_load(options, args)
+
+
+if __name__ == '__main__':
+    main()

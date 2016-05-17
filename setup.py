@@ -17,9 +17,16 @@ setup(name=package_name,
     author_email='oleg@bsdpower.com',
     url='http://github.com/p/redis-dump-load',
     py_modules=['redisdl'],
+    install_requires=['redis'],
     data_files=[
         (doc_dir, data_files),
     ],
+    entry_points={
+        'console_scripts': [
+            'redis-load = redisdl:main',
+            'redis-dump = redisdl:main',
+        ],
+    },
     license="BSD",
     classifiers=[
         'Development Status :: 4 - Beta',
