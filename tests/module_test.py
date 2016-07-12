@@ -134,3 +134,26 @@ class ModuleTest(unittest.TestCase):
         actual = json.loads(dump)
         expected = {'key': {'type': 'string', 'value': 'value'}}
         self.assertEqual(expected, actual)
+
+    def test_ttl_dumps(self):
+        self.r.set('a', 'aaa')
+        self.r.expire('a', 3600)
+
+        dump = redisdl.dumps(keys='a')
+        print dump
+        actual = json.loads(dump)
+
+        self.assertGreater(actual['a']['ttl'], 0)
+        self.assertLessEqual(actual['a']['ttl'], 3600)
+
+    def test_ttl_loads(self):
+        self.r.delete('b')
+        dump = '''{"b":{"type":"string","value":"bbb","ttl":3600}}'''
+        io = StringIO(dump)
+        redisdl.load_lump(io)
+
+        ttl = self.r.ttl('b')
+
+        self.assertGreater(ttl, 0)
+        self.assertLessEqual(ttl, 3600)
+

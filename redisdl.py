@@ -63,8 +63,10 @@ def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
         kwargs['sort_keys'] = True
     encoder = json.JSONEncoder(**kwargs)
     table = {}
-    for key, type, value in _reader(r, pretty, encoding, keys):
-        table[key] = {'type': type, 'value': value}
+    for key, type, ttl, value in _reader(r, pretty, encoding, keys):
+        table[key] = subd = {'type': type, 'value': value}
+        if ttl:
+            subd['ttl'] = ttl
     return encoder.encode(table)
 
 def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
@@ -86,11 +88,15 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
     encoder = json.JSONEncoder(**kwargs)
     fp.write('{')
     first = True
-    for key, type, value in _reader(r, pretty, encoding, keys):
+    for key, type, ttl, value in _reader(r, pretty, encoding, keys):
         key = encoder.encode(key)
         type = encoder.encode(type)
         value = encoder.encode(value)
-        item = '%s:{"type":%s,"value":%s}' % (key, type, value)
+        if ttl:
+            ttl = encoder.encode(ttl)
+            item = '%s:{"type":%s,"value":%s,"ttl":%s}' % (key, type, value, ttl)
+        else:
+            item = '%s:{"type":%s,"value":%s}' % (key, type, value)
         if first:
             first = False
         else:
@@ -172,6 +178,7 @@ def _read_key(key, r, pretty, encoding):
     p.watch(key)
     p.multi()
     p.type(key)
+    p.ttl(key)
     reader.send_command(p, key)
     # might raise redis.WatchError
     results = p.execute()
@@ -179,8 +186,10 @@ def _read_key(key, r, pretty, encoding):
     if actual_type != type:
         # type changed, retry
         raise KeyTypeChangedError
-    value = reader.handle_response(results[1], pretty, encoding)
-    return (type, value)
+
+    ttl = results[1]
+    value = reader.handle_response(results[2], pretty, encoding)
+    return (type, ttl, value)
 
 def _reader(r, pretty, encoding, keys='*'):
     for encoded_key in r.keys(keys):
@@ -188,8 +197,8 @@ def _reader(r, pretty, encoding, keys='*'):
         handled = False
         for i in range(10):
             try:
-                type, value = _read_key(encoded_key, r, pretty, encoding)
-                yield key, type, value
+                type, ttl, value = _read_key(encoded_key, r, pretty, encoding)
+                yield key, type, ttl, value
                 handled = True
                 break
             except KeyDeletedError:
@@ -225,7 +234,8 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
         item = table[key]
         type = item['type']
         value = item['value']
-        _writer(p, key, type, value)
+        ttl = item.get('ttl')
+        _writer(p, key, type, value, ttl)
         # Increase counter until 10 000...
         counter = (counter + 1) % 10000
         # ... then execute:
@@ -289,7 +299,8 @@ def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
             p = r.pipeline(transaction=False)
         type = item['type']
         value = item['value']
-        _writer(p, key, type, value)
+        ttl = item.get('ttl')
+        _writer(p, key, type, value, ttl)
         # Increase counter until 10 000...
         counter = (counter + 1) % 10000
         # ... then execute:
@@ -311,7 +322,7 @@ def load(fp, host='localhost', port=6379, password=None, db=0,
         load_lump(fp, host=host, port=port, password=password, db=db,
             empty=empty, unix_socket_path=unix_socket_path, encoding=encoding)
 
-def _writer(r, key, type, value):
+def _writer(r, key, type, value, ttl):
     r.delete(key)
     if type == 'string':
         r.set(key, value)
@@ -328,6 +339,9 @@ def _writer(r, key, type, value):
         r.hmset(key, value)
     else:
         raise UnknownTypeError("Unknown key type: %s" % type)
+
+    if ttl:
+        r.expire(key, ttl)
 
 def main():
     import optparse
