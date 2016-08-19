@@ -31,6 +31,20 @@ class ModuleTest(unittest.TestCase):
 
         self.assertEqual(expected, actual)
 
+    def test_roundtrip_pretty(self):
+        path = os.path.join(os.path.dirname(__file__), 'fixtures', 'dump.json')
+        with open(path) as f:
+            dump = f.read()
+
+        redisdl.loads(dump)
+
+        redump = redisdl.dumps(pretty=True)
+
+        expected = json.loads(dump)
+        actual = json.loads(redump)
+
+        self.assertEqual(expected, actual)
+
     def test_dump_string_value(self):
         self.r.set('key', 'value')
         dump = redisdl.dumps()
