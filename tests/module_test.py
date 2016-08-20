@@ -156,3 +156,10 @@ class ModuleTest(unittest.TestCase):
         self.assertGreater(ttl, 0)
         self.assertLessEqual(ttl, 3600)
 
+    def test_no_ttl_dumps(self):
+        self.r.set('a', 'aaa')
+
+        dump = redisdl.dumps(keys='a')
+        actual = json.loads(dump)
+
+        self.assertTrue('ttl' not in actual['a'])
