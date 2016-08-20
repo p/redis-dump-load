@@ -1,6 +1,7 @@
 import nose.plugins.attrib
 import redisdl
 import unittest
+import time as _time
 import json
 import os.path
 from . import util
@@ -139,15 +140,42 @@ class ModuleTest(unittest.TestCase):
         self.r.set('a', 'aaa')
         self.r.expire('a', 3600)
 
+        start_time = _time.time()
         dump = redisdl.dumps(keys='a')
+        end_time = _time.time()
         actual = json.loads(dump)
 
         self.assertGreater(actual['a']['ttl'], 0)
         self.assertLessEqual(actual['a']['ttl'], 3600)
+        self.assertGreaterEqual(actual['a']['expireat'], int(start_time)+3600)
+        self.assertLessEqual(actual['a']['expireat'], int(end_time)+1+3600)
 
     def test_ttl_loads(self):
         self.r.delete('b')
         dump = '''{"b":{"type":"string","value":"bbb","ttl":3600}}'''
+        io = StringIO(dump)
+        redisdl.load_lump(io)
+
+        ttl = self.r.ttl('b')
+
+        self.assertGreater(ttl, 0)
+        self.assertLessEqual(ttl, 3600)
+
+    def test_expireat_loads(self):
+        self.r.delete('b')
+        dump = '''{"b":{"type":"string","value":"bbb","expireat":_time.time() + 3600}}'''
+        io = StringIO(dump)
+        redisdl.load_lump(io)
+
+        ttl = self.r.ttl('b')
+
+        self.assertGreater(ttl, 0)
+        self.assertLessEqual(ttl, 3600)
+
+    def test_expireat_loads(self):
+        self.r.delete('b')
+        dump = '''{"b":{"type":"string","value":"bbb","expireat":%d}}''' % (
+            _time.time() + 3600)
         io = StringIO(dump)
         redisdl.load_lump(io)
 
@@ -163,3 +191,4 @@ class ModuleTest(unittest.TestCase):
         actual = json.loads(dump)
 
         self.assertTrue('ttl' not in actual['a'])
+        self.assertTrue('expireat' not in actual['a'])

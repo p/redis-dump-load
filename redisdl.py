@@ -6,6 +6,7 @@ except ImportError:
     import simplejson as json
 import redis
 import sys
+import time as _time
 import functools
 
 try:
@@ -65,8 +66,9 @@ def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
     table = {}
     for key, type, ttl, value in _reader(r, pretty, encoding, keys):
         table[key] = subd = {'type': type, 'value': value}
-        if ttl:
+        if ttl is not None:
             subd['ttl'] = ttl
+            subd['expireat'] = _time.time() + ttl
     return encoder.encode(table)
 
 def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
@@ -94,7 +96,9 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
         value = encoder.encode(value)
         if ttl:
             ttl = encoder.encode(ttl)
-            item = '%s:{"type":%s,"value":%s,"ttl":%s}' % (key, type, value, ttl)
+            expireat = _time.time() + ttl
+            item = '%s:{"type":%s,"value":%s,"ttl":%s,"expireat":%s}' % (
+                key, type, value, ttl, expireat)
         else:
             item = '%s:{"type":%s,"value":%s}' % (key, type, value)
         if first:
@@ -235,7 +239,8 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
         type = item['type']
         value = item['value']
         ttl = item.get('ttl')
-        _writer(p, key, type, value, ttl)
+        expireat = item.get('expireat')
+        _writer(p, key, type, value, ttl, expireat)
         # Increase counter until 10 000...
         counter = (counter + 1) % 10000
         # ... then execute:
@@ -322,7 +327,7 @@ def load(fp, host='localhost', port=6379, password=None, db=0,
         load_lump(fp, host=host, port=port, password=password, db=db,
             empty=empty, unix_socket_path=unix_socket_path, encoding=encoding)
 
-def _writer(r, key, type, value, ttl):
+def _writer(r, key, type, value, ttl, expireat):
     r.delete(key)
     if type == 'string':
         r.set(key, value)
@@ -340,8 +345,10 @@ def _writer(r, key, type, value, ttl):
     else:
         raise UnknownTypeError("Unknown key type: %s" % type)
 
-    if ttl:
+    if ttl is not None:
         r.expire(key, ttl)
+    elif expireat is not None:
+        r.expireat(key, expireat)
 
 def main():
     import optparse
