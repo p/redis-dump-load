@@ -37,15 +37,77 @@ class KeyDeletedError(base_exception_class):
 class KeyTypeChangedError(base_exception_class):
     pass
 
+class RedisWrapper(redis.Redis):
+    def __init__(self, *args, **kwargs):
+        super(RedisWrapper, self).__init__(*args, **kwargs)
+
+        try:
+            self.pttl('')
+            self.have_pttl = True
+        except redis.exceptions.ResponseError:
+            self.have_pttl = False
+
+    def pttl_or_ttl(self, key):
+        if self.have_pttl:
+            pttl = self.pttl(key)
+            if pttl is None:
+                return None
+            else:
+                return float(pttl) / 1000
+        else:
+            return self.ttl(key)
+
+    def pttl_or_ttl_pipeline(self, p, key):
+        if self.have_pttl:
+            return p.pttl(key)
+        else:
+            return p.ttl(key)
+
+    def decode_pttl_or_ttl_pipeline_value(self, value):
+        if value is None:
+            return None
+        if self.have_pttl:
+            return float(value) / 1000
+        else:
+            return value
+
+    def pexpire_or_expire(self, key, ttl):
+        if self.have_pttl:
+            return self.pexpire(key, int(ttl * 1000))
+        else:
+            # rounds the ttl down always
+            return self.expire(key, int(ttl))
+
+    def pexpireat_or_expireat(self, key, time):
+        if self.have_pttl:
+            return self.pexpireat(key, int(time * 1000))
+        else:
+            # rounds the expiration time down always
+            return self.expireat(key, int(time))
+
+    def pexpire_or_expire_pipeline(self, p, key, ttl):
+        if self.have_pttl:
+            return p.pexpire(key, int(ttl * 1000))
+        else:
+            # rounds the ttl down always
+            return p.expire(key, int(ttl))
+
+    def pexpireat_or_expireat_pipeline(self, p, key, time):
+        if self.have_pttl:
+            return p.pexpireat(key, int(time * 1000))
+        else:
+            # rounds the expiration time down always
+            return p.expireat(key, int(time))
+
 def client(host='localhost', port=6379, password=None, db=0,
                  unix_socket_path=None, encoding='utf-8'):
     if unix_socket_path is not None:
-        r = redis.Redis(unix_socket_path=unix_socket_path,
+        r = RedisWrapper(unix_socket_path=unix_socket_path,
                         password=password,
                         db=db,
                         charset=encoding)
     else:
-        r = redis.Redis(host=host,
+        r = RedisWrapper(host=host,
                         port=port,
                         password=password,
                         db=db,
@@ -97,7 +159,7 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
         if ttl:
             ttl = encoder.encode(ttl)
             expireat = _time.time() + ttl
-            item = '%s:{"type":%s,"value":%s,"ttl":%s,"expireat":%s}' % (
+            item = '%s:{"type":%s,"value":%s,"ttl":%f,"expireat":%f}' % (
                 key, type, value, ttl, expireat)
         else:
             item = '%s:{"type":%s,"value":%s}' % (key, type, value)
@@ -182,7 +244,7 @@ def _read_key(key, r, pretty, encoding):
     p.watch(key)
     p.multi()
     p.type(key)
-    p.ttl(key)
+    r.pttl_or_ttl_pipeline(p, key)
     reader.send_command(p, key)
     # might raise redis.WatchError
     results = p.execute()
@@ -191,7 +253,7 @@ def _read_key(key, r, pretty, encoding):
         # type changed, retry
         raise KeyTypeChangedError
 
-    ttl = results[1]
+    ttl = r.decode_pttl_or_ttl_pipeline_value(results[1])
     value = reader.handle_response(results[2], pretty, encoding)
     return (type, ttl, value)
 
@@ -240,7 +302,7 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
         value = item['value']
         ttl = item.get('ttl')
         expireat = item.get('expireat')
-        _writer(p, key, type, value, ttl, expireat)
+        _writer(r, p, key, type, value, ttl, expireat)
         # Increase counter until 10 000...
         counter = (counter + 1) % 10000
         # ... then execute:
@@ -305,7 +367,7 @@ def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
         type = item['type']
         value = item['value']
         ttl = item.get('ttl')
-        _writer(p, key, type, value, ttl)
+        _writer(r, p, key, type, value, ttl)
         # Increase counter until 10 000...
         counter = (counter + 1) % 10000
         # ... then execute:
@@ -327,28 +389,28 @@ def load(fp, host='localhost', port=6379, password=None, db=0,
         load_lump(fp, host=host, port=port, password=password, db=db,
             empty=empty, unix_socket_path=unix_socket_path, encoding=encoding)
 
-def _writer(r, key, type, value, ttl, expireat):
-    r.delete(key)
+def _writer(r, p, key, type, value, ttl, expireat):
+    p.delete(key)
     if type == 'string':
-        r.set(key, value)
+        p.set(key, value)
     elif type == 'list':
         for element in value:
-            r.rpush(key, element)
+            p.rpush(key, element)
     elif type == 'set':
         for element in value:
-            r.sadd(key, element)
+            p.sadd(key, element)
     elif type == 'zset':
         for element, score in value:
-            r.zadd(key, element, score)
+            p.zadd(key, element, score)
     elif type == 'hash':
-        r.hmset(key, value)
+        p.hmset(key, value)
     else:
         raise UnknownTypeError("Unknown key type: %s" % type)
 
     if ttl is not None:
-        r.expire(key, ttl)
+        r.pexpire_or_expire_pipeline(p, key, ttl)
     elif expireat is not None:
-        r.expireat(key, expireat)
+        r.pexpireat_or_expireat_pipeline(p, key, expireat)
 
 def main():
     import optparse
