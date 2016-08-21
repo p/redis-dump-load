@@ -53,6 +53,7 @@ class ProgramTest(unittest.TestCase):
         path = os.path.join(os.path.dirname(__file__), 'fixtures', 'dump.json')
         self.check_load([self.program, '-l', path], path)
 
+    @util.requires_ijson
     @nose.plugins.attrib.attr('yajl2')
     def test_load_yajl2(self):
         path = os.path.join(os.path.dirname(__file__), 'fixtures', 'dump.json')
