@@ -207,3 +207,15 @@ class ModuleTest(unittest.TestCase):
 
         ttl = actual['a']['ttl']
         assert int((ttl - int(ttl)) * 1000) > 0
+
+    def test_load_ttl_preference(self):
+        dump = '{"key":{"type":"string","value":"hello, world","ttl":3600,"expireat":1472654445.3598034}}'
+        redisdl.loads(dump)
+        ttl = self.r.ttl('key')
+        self.assertLess(ttl, 3601)
+
+    def test_load_expireat_preference(self):
+        dump = '{"key":{"type":"string","value":"hello, world","ttl":3600,"expireat":1472654445.3598034}}'
+        redisdl.loads(dump, use_expireat=True)
+        ttl = self.r.ttl('key')
+        self.assertGreater(ttl, 36000)
