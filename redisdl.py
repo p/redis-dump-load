@@ -41,11 +41,8 @@ class RedisWrapper(redis.Redis):
     def __init__(self, *args, **kwargs):
         super(RedisWrapper, self).__init__(*args, **kwargs)
 
-        try:
-            self.pttl('')
-            self.have_pttl = True
-        except redis.exceptions.ResponseError:
-            self.have_pttl = False
+        version = map(int, self.info()['redis_version'].split('.'))
+        self.have_pttl = version >= [2, 6]
 
     def pttl_or_ttl(self, key):
         if self.have_pttl:
