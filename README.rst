@@ -58,6 +58,8 @@ Options take string values unless otherwise noted. The options are as follows:
 - ``pretty`` (boolean, dump only): produce a pretty-printed JSON which is
   easier to read; currently this makes ``dump`` load entire data set into
   memory rather than stream it
+- ``keys`` (dump only): only dump keys matching specified pattern
+- ``use_expireat`` (boolean, load only): use ``expireat`` in preference to ``ttl`` when loading expiring keys
 - ``empty`` (boolean, load only): empty the redis data set before loading the
   data
 - ``streaming_backend`` (string): ijson_ backend to use when loading via
