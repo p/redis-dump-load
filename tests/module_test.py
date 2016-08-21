@@ -192,3 +192,15 @@ class ModuleTest(unittest.TestCase):
 
         self.assertTrue('ttl' not in actual['a'])
         self.assertTrue('expireat' not in actual['a'])
+
+    def test_ttl_precision(self):
+        self.r.set('a', 'aaa')
+        self.r.pexpire('a', 3600500)
+
+        start_time = _time.time()
+        dump = redisdl.dumps(keys='a')
+        end_time = _time.time()
+        actual = json.loads(dump)
+
+        ttl = actual['a']['ttl']
+        assert int((ttl - int(ttl)) * 1000) > 0
