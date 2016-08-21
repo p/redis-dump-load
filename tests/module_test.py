@@ -1,6 +1,10 @@
 import nose.plugins.attrib
 import redisdl
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+import time as _time
 import json
 import os.path
 from . import util
@@ -148,3 +152,84 @@ class ModuleTest(unittest.TestCase):
         actual = json.loads(dump)
         expected = {'key': {'type': 'string', 'value': 'value'}}
         self.assertEqual(expected, actual)
+
+    def test_ttl_dumps(self):
+        self.r.set('a', 'aaa')
+        self.r.expire('a', 3600)
+
+        start_time = _time.time()
+        dump = redisdl.dumps(keys='a')
+        end_time = _time.time()
+        actual = json.loads(dump)
+
+        self.assertGreater(actual['a']['ttl'], 0)
+        self.assertLessEqual(actual['a']['ttl'], 3600)
+        self.assertGreaterEqual(actual['a']['expireat'], int(start_time)+3600)
+        self.assertLessEqual(actual['a']['expireat'], int(end_time)+1+3600)
+
+    def test_ttl_loads(self):
+        self.r.delete('b')
+        dump = '''{"b":{"type":"string","value":"bbb","ttl":3600}}'''
+        io = StringIO(dump)
+        redisdl.load_lump(io)
+
+        ttl = self.r.ttl('b')
+
+        self.assertGreater(ttl, 0)
+        self.assertLessEqual(ttl, 3600)
+
+    def test_expireat_loads(self):
+        self.r.delete('b')
+        dump = '''{"b":{"type":"string","value":"bbb","expireat":_time.time() + 3600}}'''
+        io = StringIO(dump)
+        redisdl.load_lump(io)
+
+        ttl = self.r.ttl('b')
+
+        self.assertGreater(ttl, 0)
+        self.assertLessEqual(ttl, 3600)
+
+    def test_expireat_loads(self):
+        self.r.delete('b')
+        dump = '''{"b":{"type":"string","value":"bbb","expireat":%d}}''' % (
+            _time.time() + 3600)
+        io = StringIO(dump)
+        redisdl.load_lump(io)
+
+        ttl = self.r.ttl('b')
+
+        self.assertGreater(ttl, 0)
+        self.assertLessEqual(ttl, 3600)
+
+    def test_no_ttl_dumps(self):
+        self.r.set('a', 'aaa')
+
+        dump = redisdl.dumps(keys='a')
+        actual = json.loads(dump)
+
+        self.assertTrue('ttl' not in actual['a'])
+        self.assertTrue('expireat' not in actual['a'])
+
+    def test_ttl_precision(self):
+        self.r.set('a', 'aaa')
+        self.r.pexpire('a', 3600500)
+
+        start_time = _time.time()
+        dump = redisdl.dumps(keys='a')
+        end_time = _time.time()
+        actual = json.loads(dump)
+
+        ttl = actual['a']['ttl']
+        assert int((ttl - int(ttl)) * 1000) > 0
+
+    def test_load_ttl_preference(self):
+        dump = '{"key":{"type":"string","value":"hello, world","ttl":3600,"expireat":1472654445.3598034}}'
+        redisdl.loads(dump)
+        ttl = self.r.ttl('key')
+        self.assertLess(ttl, 3601)
+
+    def test_load_expireat_preference(self):
+        dump = '{"key":{"type":"string","value":"hello, world","ttl":3600,"expireat":1472654445.3598034}}'
+        redisdl.loads(dump, use_expireat=True)
+        ttl = self.r.ttl('key')
+        self.assertGreater(ttl, 36000)

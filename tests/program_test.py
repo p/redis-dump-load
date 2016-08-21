@@ -2,7 +2,10 @@ import nose.plugins.attrib
 import redisdl
 import shutil
 import subprocess
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 import json
 import os.path
 from . import util
@@ -81,16 +84,42 @@ class ProgramTest(unittest.TestCase):
 
         self.maxDiff = None
         self.assertEqual(unicode_dump, actual)
-    
+
     @util.with_temp_dir
     def test_dump_alias(self, tmp_dir):
         aliased_program = os.path.join(tmp_dir, 'redisdump')
         shutil.copy(self.program, aliased_program)
         self.check_dump(aliased_program)
-    
+
     @util.with_temp_dir
     def test_load_alias(self, tmp_dir):
         aliased_program = os.path.join(tmp_dir, 'redisload')
         path = os.path.join(os.path.dirname(__file__), 'fixtures', 'dump.json')
         shutil.copy(self.program, aliased_program)
         self.check_load([aliased_program, path], path)
+
+    def test_load_ttl_preference(self):
+        path = os.path.join(os.path.dirname(__file__), 'fixtures', 'ttl_and_expireat.json')
+        with open(path) as f:
+            dump = f.read()
+
+        subprocess.check_call([self.program, '-l', path])
+
+        redump = redisdl.dumps()
+
+        actual = json.loads(redump)
+
+        self.assertLess(actual['akey']['ttl'], 3601)
+
+    def test_load_expireat_preference(self):
+        path = os.path.join(os.path.dirname(__file__), 'fixtures', 'ttl_and_expireat.json')
+        with open(path) as f:
+            dump = f.read()
+
+        subprocess.check_call([self.program, '-l', '-A', path])
+
+        redump = redisdl.dumps()
+
+        actual = json.loads(redump)
+
+        self.assertGreater(actual['akey']['ttl'], 36000)

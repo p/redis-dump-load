@@ -6,6 +6,7 @@ except ImportError:
     import simplejson as json
 import redis
 import sys
+import time as _time
 import functools
 
 try:
@@ -36,15 +37,74 @@ class KeyDeletedError(base_exception_class):
 class KeyTypeChangedError(base_exception_class):
     pass
 
+class RedisWrapper(redis.Redis):
+    def __init__(self, *args, **kwargs):
+        super(RedisWrapper, self).__init__(*args, **kwargs)
+
+        version = [int(part) for part in self.info()['redis_version'].split('.')]
+        self.have_pttl = version >= [2, 6]
+
+    def pttl_or_ttl(self, key):
+        if self.have_pttl:
+            pttl = self.pttl(key)
+            if pttl is None:
+                return None
+            else:
+                return float(pttl) / 1000
+        else:
+            return self.ttl(key)
+
+    def pttl_or_ttl_pipeline(self, p, key):
+        if self.have_pttl:
+            return p.pttl(key)
+        else:
+            return p.ttl(key)
+
+    def decode_pttl_or_ttl_pipeline_value(self, value):
+        if value is None:
+            return None
+        if self.have_pttl:
+            return float(value) / 1000
+        else:
+            return value
+
+    def pexpire_or_expire(self, key, ttl):
+        if self.have_pttl:
+            return self.pexpire(key, int(ttl * 1000))
+        else:
+            # rounds the ttl down always
+            return self.expire(key, int(ttl))
+
+    def pexpireat_or_expireat(self, key, time):
+        if self.have_pttl:
+            return self.pexpireat(key, int(time * 1000))
+        else:
+            # rounds the expiration time down always
+            return self.expireat(key, int(time))
+
+    def pexpire_or_expire_pipeline(self, p, key, ttl):
+        if self.have_pttl:
+            return p.pexpire(key, int(ttl * 1000))
+        else:
+            # rounds the ttl down always
+            return p.expire(key, int(ttl))
+
+    def pexpireat_or_expireat_pipeline(self, p, key, time):
+        if self.have_pttl:
+            return p.pexpireat(key, int(time * 1000))
+        else:
+            # rounds the expiration time down always
+            return p.expireat(key, int(time))
+
 def client(host='localhost', port=6379, password=None, db=0,
                  unix_socket_path=None, encoding='utf-8'):
     if unix_socket_path is not None:
-        r = redis.Redis(unix_socket_path=unix_socket_path,
+        r = RedisWrapper(unix_socket_path=unix_socket_path,
                         password=password,
                         db=db,
                         charset=encoding)
     else:
-        r = redis.Redis(host=host,
+        r = RedisWrapper(host=host,
                         port=port,
                         password=password,
                         db=db,
@@ -63,8 +123,11 @@ def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
         kwargs['sort_keys'] = True
     encoder = json.JSONEncoder(**kwargs)
     table = {}
-    for key, type, value in _reader(r, pretty, encoding, keys):
-        table[key] = {'type': type, 'value': value}
+    for key, type, ttl, value in _reader(r, pretty, encoding, keys):
+        table[key] = subd = {'type': type, 'value': value}
+        if ttl is not None:
+            subd['ttl'] = ttl
+            subd['expireat'] = _time.time() + ttl
     return encoder.encode(table)
 
 def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
@@ -86,11 +149,17 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
     encoder = json.JSONEncoder(**kwargs)
     fp.write('{')
     first = True
-    for key, type, value in _reader(r, pretty, encoding, keys):
+    for key, type, ttl, value in _reader(r, pretty, encoding, keys):
         key = encoder.encode(key)
         type = encoder.encode(type)
         value = encoder.encode(value)
-        item = '%s:{"type":%s,"value":%s}' % (key, type, value)
+        if ttl:
+            ttl = encoder.encode(ttl)
+            expireat = _time.time() + ttl
+            item = '%s:{"type":%s,"value":%s,"ttl":%f,"expireat":%f}' % (
+                key, type, value, ttl, expireat)
+        else:
+            item = '%s:{"type":%s,"value":%s}' % (key, type, value)
         if first:
             first = False
         else:
@@ -172,6 +241,7 @@ def _read_key(key, r, pretty, encoding):
     p.watch(key)
     p.multi()
     p.type(key)
+    r.pttl_or_ttl_pipeline(p, key)
     reader.send_command(p, key)
     # might raise redis.WatchError
     results = p.execute()
@@ -179,8 +249,10 @@ def _read_key(key, r, pretty, encoding):
     if actual_type != type:
         # type changed, retry
         raise KeyTypeChangedError
-    value = reader.handle_response(results[1], pretty, encoding)
-    return (type, value)
+
+    ttl = r.decode_pttl_or_ttl_pipeline_value(results[1])
+    value = reader.handle_response(results[2], pretty, encoding)
+    return (type, ttl, value)
 
 def _reader(r, pretty, encoding, keys='*'):
     for encoded_key in r.keys(keys):
@@ -188,8 +260,8 @@ def _reader(r, pretty, encoding, keys='*'):
         handled = False
         for i in range(10):
             try:
-                type, value = _read_key(encoded_key, r, pretty, encoding)
-                yield key, type, value
+                type, ttl, value = _read_key(encoded_key, r, pretty, encoding)
+                yield key, type, ttl, value
                 handled = True
                 break
             except KeyDeletedError:
@@ -211,7 +283,7 @@ def _empty(r):
         r.delete(key)
 
 def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
-          unix_socket_path=None, encoding='utf-8'):
+          unix_socket_path=None, encoding='utf-8', use_expireat=False):
     r = client(host=host, port=port, password=password, db=db,
                unix_socket_path=unix_socket_path, encoding=encoding)
     if empty:
@@ -225,7 +297,9 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
         item = table[key]
         type = item['type']
         value = item['value']
-        _writer(p, key, type, value)
+        ttl = item.get('ttl')
+        expireat = item.get('expireat')
+        _writer(r, p, key, type, value, ttl, expireat, use_expireat=use_expireat)
         # Increase counter until 10 000...
         counter = (counter + 1) % 10000
         # ... then execute:
@@ -236,7 +310,7 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
         p.execute()
 
 def load_lump(fp, host='localhost', port=6379, password=None, db=0,
-    empty=False, unix_socket_path=None, encoding='utf-8',
+    empty=False, unix_socket_path=None, encoding='utf-8', use_expireat=False,
 ):
     s = fp.read()
     if py3:
@@ -244,7 +318,7 @@ def load_lump(fp, host='localhost', port=6379, password=None, db=0,
         # if bytes, decode to a string because loads requires input to be a string.
         if isinstance(s, bytes):
             s = s.decode(encoding)
-    loads(s, host, port, password, db, empty, unix_socket_path, encoding)
+    loads(s, host, port, password, db, empty, unix_socket_path, encoding, use_expireat=use_expireat)
 
 def get_ijson(local_streaming_backend):
     local_streaming_backend = local_streaming_backend or streaming_backend
@@ -276,7 +350,7 @@ def ijson_top_level_items(file, local_streaming_backend):
         pass
 
 def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
-    empty=False, unix_socket_path=None, encoding='utf-8',
+    empty=False, unix_socket_path=None, encoding='utf-8', use_expireat=False,
     streaming_backend=None,
 ):
     r = client(host=host, port=port, password=password, db=db,
@@ -289,7 +363,9 @@ def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
             p = r.pipeline(transaction=False)
         type = item['type']
         value = item['value']
-        _writer(p, key, type, value)
+        ttl = item.get('ttl')
+        expireat = item.get('expireat')
+        _writer(r, p, key, type, value, ttl, expireat, use_expireat=use_expireat)
         # Increase counter until 10 000...
         counter = (counter + 1) % 10000
         # ... then execute:
@@ -300,34 +376,47 @@ def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
         p.execute()
 
 def load(fp, host='localhost', port=6379, password=None, db=0,
-    empty=False, unix_socket_path=None, encoding='utf-8',
+    empty=False, unix_socket_path=None, encoding='utf-8', use_expireat=False,
     streaming_backend=None,
 ):
     if have_streaming_load:
         load_streaming(fp, host=host, port=port, password=password, db=db,
             empty=empty, unix_socket_path=unix_socket_path, encoding=encoding,
+            use_expireat=use_expireat,
             streaming_backend=streaming_backend)
     else:
         load_lump(fp, host=host, port=port, password=password, db=db,
-            empty=empty, unix_socket_path=unix_socket_path, encoding=encoding)
+            empty=empty, unix_socket_path=unix_socket_path, encoding=encoding,
+            use_expireat=use_expireat)
 
-def _writer(r, key, type, value):
-    r.delete(key)
+def _writer(r, p, key, type, value, ttl, expireat, use_expireat):
+    p.delete(key)
     if type == 'string':
-        r.set(key, value)
+        p.set(key, value)
     elif type == 'list':
         for element in value:
-            r.rpush(key, element)
+            p.rpush(key, element)
     elif type == 'set':
         for element in value:
-            r.sadd(key, element)
+            p.sadd(key, element)
     elif type == 'zset':
         for element, score in value:
-            r.zadd(key, element, score)
+            p.zadd(key, element, score)
     elif type == 'hash':
-        r.hmset(key, value)
+        p.hmset(key, value)
     else:
         raise UnknownTypeError("Unknown key type: %s" % type)
+
+    if use_expireat:
+        if expireat is not None:
+            r.pexpireat_or_expireat_pipeline(p, key, expireat)
+        elif ttl is not None:
+            r.pexpire_or_expire_pipeline(p, key, ttl)
+    else:
+        if ttl is not None:
+            r.pexpire_or_expire_pipeline(p, key, ttl)
+        elif expireat is not None:
+            r.pexpireat_or_expireat_pipeline(p, key, expireat)
 
 def main():
     import optparse
@@ -358,6 +447,8 @@ def main():
         if hasattr(options, 'keys') and options.keys:
             args['keys'] = options.keys
         # load only
+        if hasattr(options, 'use_expireat') and options.use_expireat:
+            args['use_expireat'] = True
         if hasattr(options, 'empty') and options.empty:
             args['empty'] = True
         if hasattr(options, 'backend') and options.backend:
@@ -423,21 +514,23 @@ def main():
         parser.add_option('-d', '--db', help='dump DATABASE (0-N, default 0)')
         parser.add_option('-k', '--keys', help='dump only keys matching specified glob-style pattern')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout')
-        parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it', action='store_true')
+        parser.add_option('-y', '--pretty', help='split output on multiple lines and indent it', action='store_true')
         parser.add_option('-E', '--encoding', help='set encoding to use while decoding data from redis', default='utf-8')
     elif help == LOAD:
         parser.add_option('-d', '--db', help='load into DATABASE (0-N, default 0)')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading')
         parser.add_option('-E', '--encoding', help='set encoding to use while encoding data to redis', default='utf-8')
         parser.add_option('-B', '--backend', help='use specified ijson backend, default is pure Python')
+        parser.add_option('-A', '--use-expireat', help='use EXPIREAT rather than TTL/EXPIRE', action='store_true')
     else:
         parser.add_option('-l', '--load', help='load data into redis (default is to dump data from redis)', action='store_true')
         parser.add_option('-d', '--db', help='dump or load into DATABASE (0-N, default 0)')
         parser.add_option('-k', '--keys', help='dump only keys matching specified glob-style pattern')
         parser.add_option('-o', '--output', help='write to OUTPUT instead of stdout (dump mode only)')
-        parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it (dump mode only)', action='store_true')
+        parser.add_option('-y', '--pretty', help='split output on multiple lines and indent it (dump mode only)', action='store_true')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading (load mode only)', action='store_true')
         parser.add_option('-E', '--encoding', help='set encoding to use while decoding data from redis', default='utf-8')
+        parser.add_option('-A', '--use-expireat', help='use EXPIREAT rather than TTL/EXPIRE', action='store_true')
         parser.add_option('-B', '--backend', help='use specified ijson backend, default is pure Python (load mode only)')
     options, args = parser.parse_args()
 

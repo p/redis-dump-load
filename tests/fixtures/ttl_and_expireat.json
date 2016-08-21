@@ -1,0 +1,8 @@
+{
+    "akey": {
+        "type": "string",
+        "value": "avalue",
+        "ttl": 3600,
+        "expireat": 1472654445.3598034
+    }
+}
