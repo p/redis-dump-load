@@ -2,7 +2,10 @@ import nose.plugins.attrib
 import redisdl
 import shutil
 import subprocess
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 import json
 import os.path
 from . import util
