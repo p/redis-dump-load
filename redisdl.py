@@ -364,7 +364,8 @@ def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
         type = item['type']
         value = item['value']
         ttl = item.get('ttl')
-        _writer(r, p, key, type, value, ttl)
+        expireat = item.get('expireat')
+        _writer(r, p, key, type, value, ttl, expireat)
         # Increase counter until 10 000...
         counter = (counter + 1) % 10000
         # ... then execute:
