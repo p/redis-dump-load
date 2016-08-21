@@ -160,6 +160,9 @@ use ``expireat`` values in preference to ``ttl`` values, setting expiring
 keys to expire at the same absolute time as they had before they were dumped
 (as long as system times are in sync on all machines involved).
 
+Dumping and loading of TTL values and expiration times has been added as of
+redis-dump-load version 0.5.0.
+
 Unicode
 -------
 
