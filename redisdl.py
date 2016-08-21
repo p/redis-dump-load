@@ -561,7 +561,7 @@ def main():
         parser.add_option('-d', '--db', help='load into DATABASE (0-N, default 0)')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading')
         parser.add_option('-E', '--encoding', help='set encoding to use while encoding data to redis', default='utf-8')
-        parser.add_option('-B', '--backend', help='use specified ijson backend, default is pure Python')
+        parser.add_option('-B', '--backend', help='use specified streaming backend')
         parser.add_option('-A', '--use-expireat', help='use EXPIREAT rather than TTL/EXPIRE', action='store_true')
     else:
         parser.add_option('-l', '--load', help='load data into redis (default is to dump data from redis)', action='store_true')
@@ -572,7 +572,7 @@ def main():
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading (load mode only)', action='store_true')
         parser.add_option('-E', '--encoding', help='set encoding to use while decoding data from redis', default='utf-8')
         parser.add_option('-A', '--use-expireat', help='use EXPIREAT rather than TTL/EXPIRE', action='store_true')
-        parser.add_option('-B', '--backend', help='use specified ijson backend, default is pure Python (load mode only)')
+        parser.add_option('-B', '--backend', help='use specified streaming backend (load mode only)')
     options, args = parser.parse_args()
 
     if hasattr(options, 'load') and options.load:
