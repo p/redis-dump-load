@@ -1,6 +1,9 @@
 import nose.plugins.attrib
 import redisdl
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 import time as _time
 import json
 import os.path
