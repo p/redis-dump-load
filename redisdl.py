@@ -283,7 +283,7 @@ def _empty(r):
         r.delete(key)
 
 def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
-          unix_socket_path=None, encoding='utf-8'):
+          unix_socket_path=None, encoding='utf-8', use_expireat=False):
     r = client(host=host, port=port, password=password, db=db,
                unix_socket_path=unix_socket_path, encoding=encoding)
     if empty:
@@ -299,7 +299,7 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
         value = item['value']
         ttl = item.get('ttl')
         expireat = item.get('expireat')
-        _writer(r, p, key, type, value, ttl, expireat)
+        _writer(r, p, key, type, value, ttl, expireat, use_expireat=use_expireat)
         # Increase counter until 10 000...
         counter = (counter + 1) % 10000
         # ... then execute:
@@ -310,7 +310,7 @@ def loads(s, host='localhost', port=6379, password=None, db=0, empty=False,
         p.execute()
 
 def load_lump(fp, host='localhost', port=6379, password=None, db=0,
-    empty=False, unix_socket_path=None, encoding='utf-8',
+    empty=False, unix_socket_path=None, encoding='utf-8', use_expireat=False,
 ):
     s = fp.read()
     if py3:
@@ -318,7 +318,7 @@ def load_lump(fp, host='localhost', port=6379, password=None, db=0,
         # if bytes, decode to a string because loads requires input to be a string.
         if isinstance(s, bytes):
             s = s.decode(encoding)
-    loads(s, host, port, password, db, empty, unix_socket_path, encoding)
+    loads(s, host, port, password, db, empty, unix_socket_path, encoding, use_expireat=use_expireat)
 
 def get_ijson(local_streaming_backend):
     local_streaming_backend = local_streaming_backend or streaming_backend
@@ -350,7 +350,7 @@ def ijson_top_level_items(file, local_streaming_backend):
         pass
 
 def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
-    empty=False, unix_socket_path=None, encoding='utf-8',
+    empty=False, unix_socket_path=None, encoding='utf-8', use_expireat=False,
     streaming_backend=None,
 ):
     r = client(host=host, port=port, password=password, db=db,
@@ -365,7 +365,7 @@ def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
         value = item['value']
         ttl = item.get('ttl')
         expireat = item.get('expireat')
-        _writer(r, p, key, type, value, ttl, expireat)
+        _writer(r, p, key, type, value, ttl, expireat, use_expireat=use_expireat)
         # Increase counter until 10 000...
         counter = (counter + 1) % 10000
         # ... then execute:
@@ -376,18 +376,20 @@ def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
         p.execute()
 
 def load(fp, host='localhost', port=6379, password=None, db=0,
-    empty=False, unix_socket_path=None, encoding='utf-8',
+    empty=False, unix_socket_path=None, encoding='utf-8', use_expireat=False,
     streaming_backend=None,
 ):
     if have_streaming_load:
         load_streaming(fp, host=host, port=port, password=password, db=db,
             empty=empty, unix_socket_path=unix_socket_path, encoding=encoding,
+            use_expireat=use_expireat,
             streaming_backend=streaming_backend)
     else:
         load_lump(fp, host=host, port=port, password=password, db=db,
-            empty=empty, unix_socket_path=unix_socket_path, encoding=encoding)
+            empty=empty, unix_socket_path=unix_socket_path, encoding=encoding,
+            use_expireat=use_expireat)
 
-def _writer(r, p, key, type, value, ttl, expireat):
+def _writer(r, p, key, type, value, ttl, expireat, use_expireat):
     p.delete(key)
     if type == 'string':
         p.set(key, value)
@@ -405,10 +407,16 @@ def _writer(r, p, key, type, value, ttl, expireat):
     else:
         raise UnknownTypeError("Unknown key type: %s" % type)
 
-    if ttl is not None:
-        r.pexpire_or_expire_pipeline(p, key, ttl)
-    elif expireat is not None:
-        r.pexpireat_or_expireat_pipeline(p, key, expireat)
+    if use_expireat:
+        if expireat is not None:
+            r.pexpireat_or_expireat_pipeline(p, key, expireat)
+        elif ttl is not None:
+            r.pexpire_or_expire_pipeline(p, key, ttl)
+    else:
+        if ttl is not None:
+            r.pexpire_or_expire_pipeline(p, key, ttl)
+        elif expireat is not None:
+            r.pexpireat_or_expireat_pipeline(p, key, expireat)
 
 def main():
     import optparse
@@ -439,6 +447,8 @@ def main():
         if hasattr(options, 'keys') and options.keys:
             args['keys'] = options.keys
         # load only
+        if hasattr(options, 'use_expireat'):
+            args['use_expireat'] = True
         if hasattr(options, 'empty') and options.empty:
             args['empty'] = True
         if hasattr(options, 'backend') and options.backend:
@@ -511,6 +521,7 @@ def main():
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading')
         parser.add_option('-E', '--encoding', help='set encoding to use while encoding data to redis', default='utf-8')
         parser.add_option('-B', '--backend', help='use specified ijson backend, default is pure Python')
+        parser.add_option('-A', '--use-expireat', help='use EXPIREAT rather than TTL/EXPIRE')
     else:
         parser.add_option('-l', '--load', help='load data into redis (default is to dump data from redis)', action='store_true')
         parser.add_option('-d', '--db', help='dump or load into DATABASE (0-N, default 0)')
@@ -519,6 +530,7 @@ def main():
         parser.add_option('-y', '--pretty', help='Split output on multiple lines and indent it (dump mode only)', action='store_true')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading (load mode only)', action='store_true')
         parser.add_option('-E', '--encoding', help='set encoding to use while decoding data from redis', default='utf-8')
+        parser.add_option('-A', '--use-expireat', help='use EXPIREAT rather than TTL/EXPIRE')
         parser.add_option('-B', '--backend', help='use specified ijson backend, default is pure Python (load mode only)')
     options, args = parser.parse_args()
 
