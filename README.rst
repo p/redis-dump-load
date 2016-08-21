@@ -109,6 +109,7 @@ as a command line tool. The command line options are:
 - ``-E ENCODING``/``-encoding ENCODING``: specify encoding to use
 - ``-o PATH``/``--output PATH``: write dump to PATH rather than standard output
 - ``-y``/``--pretty`` (dumping only): pretty-print JSON
+- ``-A``/``--use-expireat`` (loading only): use ``expireat`` rather than ``ttl`` values in the dump
 - ``-e``/``--empty`` (loading only): empty redis data set before loading
 - ``-B BACKEND``/``--backend BACKEND`` (loading only): ijson streaming backend to use
 
@@ -135,6 +136,27 @@ Note: yajl2 backend fails when it is given strings on Python 3. Please open
 the files in binary mode and use ``BytesIO`` rather than ``StringIO`` objects.
 
 Note: streaming loading is substantially slower than lump loading.
+
+TTL, EXPIRE and EXPIREAT
+------------------------
+
+When dumping, redis-dump-load dumps the TTL values for expiring keys
+as well as calculated time when the keys will expire (``expireat``).
+As Redis does not provide a command to retrieve absolute expiration time of
+a key, the expiration time is calculated using the current time on the
+*client*'s system. As such, if the time on the client system is not in sync
+with time on the system where the Redis server is running, ``expireat``
+values will be incorrect.
+
+When loading, redis-dump-load by default uses the TTL values in the dump
+(``ttl`` key) to set expiration times on the keys in preference to
+``expireat`` values. This will maintain the expiration times of the keys
+relative to the dump/load time but will change the absolute expiration time
+of the keys. Using ``-A``/``--use-expireat`` command line option or
+``use_expireat`` parameter to module functions will make redis-dump-load
+use ``expireat`` values in preference to ``ttl`` values, setting expiring
+keys to expire at the same absolute time as they had before they were dumped
+(as long as system times are in sync on all machines involved).
 
 Unicode
 -------
