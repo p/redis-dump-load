@@ -210,6 +210,7 @@ class ModuleTest(unittest.TestCase):
         self.assertTrue('ttl' not in actual['a'])
         self.assertTrue('expireat' not in actual['a'])
 
+    @util.min_redis(2, 6)
     def test_ttl_precision(self):
         self.r.set('a', 'aaa')
         self.r.pexpire('a', 3600500)
