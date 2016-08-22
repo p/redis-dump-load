@@ -74,3 +74,17 @@ def requires_ijson(fn):
             raise nose.plugins.skip.SkipTest('ijson is not present')
         return fn(*args, **kwargs)
     return decorated
+
+def min_redis(*version):
+    def decorator(fn):
+        @functools.wraps(fn)
+        def decorated(self, *args, **kwargs):
+            actual_version_string = self.r.info()['redis_version']
+            actual_version = [int(part) for part in actual_version_string.split('.')]
+            if version > tuple(actual_version):
+                requested_version_string = '.'.join([str(part) for part in version])
+                raise nose.plugins.skip.SkipTest('Requested redis >= %s, running on %s' % (
+                    requested_version_string, actual_version_string))
+            return fn(self, *args, **kwargs)
+        return decorated
+    return decorator
