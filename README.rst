@@ -34,7 +34,7 @@ redis-dump-load exports a pickle_-like interface, namely ``load``,
     redisdl.loads(json_text)
 
     with open('path/to/dump.json') as f:
-        # streams data if ijson is installed
+        # streams data if ijson or jsaone are installed
         redisdl.load(f)
 
 See the streaming section below for more information about streaming.
@@ -62,8 +62,8 @@ Options take string values unless otherwise noted. The options are as follows:
 - ``use_expireat`` (boolean, load only): use ``expireat`` in preference to ``ttl`` when loading expiring keys
 - ``empty`` (boolean, load only): empty the redis data set before loading the
   data
-- ``streaming_backend`` (string): ijson_ backend to use when loading via
-  ``load`` method, if ijson is installed and streaming is thus used
+- ``streaming_backend`` (string): streaming backend to use when loading via
+  ``load`` method, if ijson_ or jsaone_ is installed and streaming is thus used
 
 Command Line Usage
 ^^^^^^^^^^^^^^^^^^
@@ -113,31 +113,44 @@ as a command line tool. The command line options are:
 - ``-y``/``--pretty`` (dumping only): pretty-print JSON
 - ``-A``/``--use-expireat`` (loading only): use ``expireat`` rather than ``ttl`` values in the dump
 - ``-e``/``--empty`` (loading only): empty redis data set before loading
-- ``-B BACKEND``/``--backend BACKEND`` (loading only): ijson streaming backend to use
+- ``-B BACKEND``/``--backend BACKEND`` (loading only): streaming backend to use
 
 Streaming
 ---------
 
 ``dump`` will stream data unless ``pretty`` is given and ``True``.
 
-``load`` will stream data if ijson_ is installed. To determine whether
+``load`` will stream data if ijson_ or jsaone_ is installed. To determine whether
 redis-dump-load supports streaming data load, examine
-``redisdl.have_streaming_load`` variable.
+``redisdl.have_streaming_load`` variable. There are also
+``redisdl.have_ijson`` and ``redisdl.have_jsaone`` variables indicating
+presence of the respective library.
 
-Default ijson streaming backend is ``python`` and ijson does not autoselect
-backends based on installed json libraries. To use a non-default ijson backend,
-either pass the desired backend as follows::
+redis-dump-load prefers ijson over jsaone and does not specify a backend for
+ijson by default, which as of this writing means that ijson's pure Python
+backend will be used. To request a specific backend either pass it as
+follows to the load methods::
 
-    redisdl.load(io, streaming_backend='yajl2')
+    redisdl.load(io, streaming_backend='ijson-yajl2')
 
 ... or set the desired backend globally as follows::
 
-    redisdl.streaming_backend = 'yajl2'
+    redisdl.streaming_backend = 'ijson-yajl2'
 
-Note: yajl2 backend fails when it is given strings on Python 3. Please open
+The backend argument takes form of "library-library backend", e.g.:
+- ``ijson`` selects the default backend of ijson, which currently is the pure Python one.
+- ``ijson-yajl2`` selects ijson with yajl2 backend.
+- ``yajl2`` means the same things as ``ijson-yajl2`` for compatibility with older redis-dump-load versions.
+- ``jsaone`` selects the jsaone backend.
+
+Note: ijson's yajl2 backend fails when it is given strings on Python 3. Please open
 the files in binary mode and use ``BytesIO`` rather than ``StringIO`` objects.
 
-Note: streaming loading is substantially slower than lump loading.
+Note: Streaming loading is substantially slower than lump loading.
+To force lump loading of files, read the files in memory and invoke ``loads``
+rather than ``load``.
+
+jsaone support was added in redis-dump-load version 1.0.
 
 TTL, EXPIRE and EXPIREAT
 ------------------------
@@ -160,8 +173,8 @@ use ``expireat`` values in preference to ``ttl`` values, setting expiring
 keys to expire at the same absolute time as they had before they were dumped
 (as long as system times are in sync on all machines involved).
 
-Dumping and loading of TTL values and expiration times has been added as of
-redis-dump-load version 0.5.0.
+Dumping and loading of TTL values and expiration times was added in
+redis-dump-load version 1.0.
 
 Unicode
 -------
@@ -187,7 +200,7 @@ Dependencies
 ------------
 
 - redis-py_
-- ijson_ (optional, for streaming load)
+- ijson_ or jsaone_ (optional, for streaming load)
 - simplejson_ (Python 2.5 only)
 
 Tests
@@ -213,3 +226,4 @@ Released under the 2 clause BSD license.
 .. _pickle: http://docs.python.org/library/pickle.html
 .. _nose: https://nose.readthedocs.org/en/latest/
 .. _ijson: https://pypi.python.org/pypi/ijson
+.. _jsaone: http://pietrobattiston.it/jsaone

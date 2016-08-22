@@ -9,12 +9,20 @@ import sys
 import time as _time
 import functools
 
+have_streaming_load = have_ijson = have_jsaone = False
 try:
-    import ijson as ijson_root
+    import ijson as ijson_mod
     have_streaming_load = True
+    have_ijson = True
+    default_streaming_backend = 'ijson'
 except ImportError:
-    have_streaming_load = False
-streaming_backend = None
+    try:
+        import jsaone as jsaone_mod
+        have_streaming_load = True
+        have_jsaone = True
+        default_streaming_backend = 'jsaone'
+    except ImportError:
+        pass
 
 py3 = sys.version_info[0] == 3
 
@@ -321,12 +329,11 @@ def load_lump(fp, host='localhost', port=6379, password=None, db=0,
     loads(s, host, port, password, db, empty, unix_socket_path, encoding, use_expireat=use_expireat)
 
 def get_ijson(local_streaming_backend):
-    local_streaming_backend = local_streaming_backend or streaming_backend
     if local_streaming_backend:
         __import__('ijson.backends.%s' % local_streaming_backend)
-        ijson = getattr(ijson_root.backends, local_streaming_backend)
+        ijson = getattr(ijson_mod.backends, local_streaming_backend)
     else:
-        ijson = ijson_root
+        ijson = ijson_mod
     return ijson
 
 def ijson_top_level_items(file, local_streaming_backend):
@@ -340,7 +347,7 @@ def ijson_top_level_items(file, local_streaming_backend):
             if current != '':
                 wanted = current
                 if event in ('start_map', 'start_array'):
-                    builder = ijson_root.ObjectBuilder()
+                    builder = ijson_mod.ObjectBuilder()
                     end_event = event.replace('start', 'end')
                     while (current, event) != (wanted, end_event):
                         builder.event(event, value)
@@ -349,15 +356,50 @@ def ijson_top_level_items(file, local_streaming_backend):
     except StopIteration:
         pass
 
+def create_loader(fp, streaming_backend=None):
+    if not have_streaming_load:
+        raise TypeError('Cannot create a streaming loader - neither ijson nor jsaone are present')
+
+    if streaming_backend is None:
+        streaming_backend = default_streaming_backend
+    if '-' in streaming_backend:
+        lib, option = streaming_backend.split('-')
+        if lib not in ('ijson', 'jsaone'):
+            raise TypeError('Invalid streaming backend requested: %s' % streaming_backend)
+    elif streaming_backend == 'ijson':
+        lib = 'ijson'
+        option = None
+    elif streaming_backend == 'jsaone':
+        lib = 'jsaone'
+        option = None
+    else:
+        lib = 'ijson'
+        option = streaming_backend
+
+    if lib == 'ijson':
+        if not have_ijson:
+            raise TypeError('%s backend requested but ijson is not present' % streaming_backend)
+        def loader():
+            return ijson_top_level_items(fp, option)
+    else:
+        if not have_jsaone:
+            raise TypeError('jsaone backend requested but jsaone is not present')
+        def loader():
+            return jsaone_mod.load(fp)
+
+    return loader
+
 def load_streaming(fp, host='localhost', port=6379, password=None, db=0,
     empty=False, unix_socket_path=None, encoding='utf-8', use_expireat=False,
     streaming_backend=None,
 ):
+    loader = create_loader(fp, streaming_backend)
+
     r = client(host=host, port=port, password=password, db=db,
                unix_socket_path=unix_socket_path, encoding=encoding)
 
     counter = 0
-    for key, item in ijson_top_level_items(fp, streaming_backend):
+    for key, item in loader():
         # Create pipeline:
         if not counter:
             p = r.pipeline(transaction=False)
@@ -382,8 +424,7 @@ def load(fp, host='localhost', port=6379, password=None, db=0,
     if have_streaming_load:
         load_streaming(fp, host=host, port=port, password=password, db=db,
             empty=empty, unix_socket_path=unix_socket_path, encoding=encoding,
-            use_expireat=use_expireat,
-            streaming_backend=streaming_backend)
+            use_expireat=use_expireat, streaming_backend=streaming_backend)
     else:
         load_lump(fp, host=host, port=port, password=password, db=db,
             empty=empty, unix_socket_path=unix_socket_path, encoding=encoding,
@@ -520,7 +561,7 @@ def main():
         parser.add_option('-d', '--db', help='load into DATABASE (0-N, default 0)')
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading')
         parser.add_option('-E', '--encoding', help='set encoding to use while encoding data to redis', default='utf-8')
-        parser.add_option('-B', '--backend', help='use specified ijson backend, default is pure Python')
+        parser.add_option('-B', '--backend', help='use specified streaming backend')
         parser.add_option('-A', '--use-expireat', help='use EXPIREAT rather than TTL/EXPIRE', action='store_true')
     else:
         parser.add_option('-l', '--load', help='load data into redis (default is to dump data from redis)', action='store_true')
@@ -531,7 +572,7 @@ def main():
         parser.add_option('-e', '--empty', help='delete all keys in destination db prior to loading (load mode only)', action='store_true')
         parser.add_option('-E', '--encoding', help='set encoding to use while decoding data from redis', default='utf-8')
         parser.add_option('-A', '--use-expireat', help='use EXPIREAT rather than TTL/EXPIRE', action='store_true')
-        parser.add_option('-B', '--backend', help='use specified ijson backend, default is pure Python (load mode only)')
+        parser.add_option('-B', '--backend', help='use specified streaming backend (load mode only)')
     options, args = parser.parse_args()
 
     if hasattr(options, 'load') and options.load:
