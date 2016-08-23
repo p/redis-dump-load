@@ -2,7 +2,11 @@
 
 set -e
 
-NOSETESTS=nosetests
+NOSETESTS="nosetests -v"
+
+export LD_LIBRARY_PATH=/home/travis/local/lib
+
+echo Streaming backend: `python -c 'import redisdl; print(redisdl.default_streaming_backend)'`
 
 if test "$TEST" = slow; then
   $NOSETESTS -a '!yajl2,slow'
