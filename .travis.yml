@@ -24,6 +24,6 @@ matrix:
 services:
   - redis-server
 install: >
-  ./tests/travis/run.sh
+  ./tests/travis/setup.sh
 script: >
   ./tests/travis/run.sh
