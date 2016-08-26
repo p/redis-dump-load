@@ -363,6 +363,13 @@ class TextWrapper(object):
     def read(self, *args, **kwargs):
         return self.fp.read(*args, **kwargs).decode()
 
+class BytesWrapper(object):
+    def __init__(self, fp):
+        self.fp = fp
+        
+    def read(self, *args, **kwargs):
+        return self.fp.read(*args, **kwargs).encode('utf-8')
+
 def create_loader(fp, streaming_backend=None):
     if not have_streaming_load:
         raise TypeError('Cannot create a streaming loader - neither ijson nor jsaone are present')
@@ -386,6 +393,8 @@ def create_loader(fp, streaming_backend=None):
     if lib == 'ijson':
         if not have_ijson:
             raise TypeError('%s backend requested but ijson is not present' % streaming_backend)
+        if py3 and isinstance(fp.read(0), str):
+            fp = BytesWrapper(fp)
         def loader():
             return ijson_top_level_items(fp, option)
     else:

@@ -143,8 +143,11 @@ The backend argument takes form of "library-library backend", e.g.:
 - ``yajl2`` means the same things as ``ijson-yajl2`` for compatibility with older redis-dump-load versions.
 - ``jsaone`` selects the jsaone backend.
 
-Note: ijson's yajl2 backend fails when it is given strings on Python 3. Please open
-the files in binary mode and use ``BytesIO`` rather than ``StringIO`` objects.
+Note: ijson's yajl2 backend can only decode ``bytes`` instances, not ``str``.
+When loading data from a file opened in text mode and using ijson-yajl2,
+redis-dump-load will encode the file data using utf-8 encoding before
+passing the data to ijson. If this fails, try opening the file/stream in
+binary mode.
 
 Note: jsaone can only decode text strings (``str`` instances), not ``bytes``.
 When loading data from a file opened in binary mode and using jsaone,

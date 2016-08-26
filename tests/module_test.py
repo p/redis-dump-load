@@ -149,15 +149,26 @@ class ModuleTest(unittest.TestCase):
             value = self.r.get('key')
             self.assertEqual('hello, world', value.decode('ascii'))
 
-        # yajl2 backend does not appear to be capable of loading StringIOs
+        @util.override_default_streaming_backend('ijson-yajl2')
         @util.requires_ijson
         @nose.plugins.attrib.attr('yajl2')
-        def test_load_bytesio_yajl2_backend(self):
+        def test_load_bytesio_yajl2_backend_bytes(self):
             self.assertTrue(redisdl.have_streaming_load)
-            redisdl.streaming_backend = 'yajl2'
 
             dump = '{"key":{"type":"string","value":"hello, world"}}'
             io = BytesIO(dump.encode('utf-8'))
+            redisdl.load(io)
+            value = self.r.get('key')
+            self.assertEqual('hello, world', value.decode('ascii'))
+
+        @util.override_default_streaming_backend('ijson-yajl2')
+        @util.requires_ijson
+        @nose.plugins.attrib.attr('yajl2')
+        def test_load_bytesio_yajl2_backend_str(self):
+            self.assertTrue(redisdl.have_streaming_load)
+
+            dump = '{"key":{"type":"string","value":"hello, world"}}'
+            io = StringIO(dump)
             redisdl.load(io)
             value = self.r.get('key')
             self.assertEqual('hello, world', value.decode('ascii'))
