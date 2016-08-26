@@ -146,6 +146,12 @@ The backend argument takes form of "library-library backend", e.g.:
 Note: ijson's yajl2 backend fails when it is given strings on Python 3. Please open
 the files in binary mode and use ``BytesIO`` rather than ``StringIO`` objects.
 
+Note: jsaone can only decode text strings (``str`` instances), not ``bytes``.
+When loading data from a file opened in binary mode and using jsaone,
+redis-dump-load will decode the file data using the default encoding.
+If this fails, you can change the default encoding or open the files in text
+mode with the encoding appropriately specified in the ``open()`` call.
+
 Note: Streaming loading is substantially slower than lump loading.
 To force lump loading of files, read the files in memory and invoke ``loads``
 rather than ``load``.
