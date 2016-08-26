@@ -356,6 +356,13 @@ def ijson_top_level_items(file, local_streaming_backend):
     except StopIteration:
         pass
 
+class TextWrapper(object):
+    def __init__(self, fp):
+        self.fp = fp
+        
+    def read(self, *args, **kwargs):
+        return self.fp.read(*args, **kwargs).decode()
+
 def create_loader(fp, streaming_backend=None):
     if not have_streaming_load:
         raise TypeError('Cannot create a streaming loader - neither ijson nor jsaone are present')
@@ -384,6 +391,9 @@ def create_loader(fp, streaming_backend=None):
     else:
         if not have_jsaone:
             raise TypeError('jsaone backend requested but jsaone is not present')
+        if py3 and isinstance(fp.read(0), bytes):
+            # jsaone can only process text string data (str), not bytes
+            fp = TextWrapper(fp)
         def loader():
             return jsaone_mod.load(fp)
 

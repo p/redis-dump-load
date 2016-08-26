@@ -11,7 +11,10 @@ from . import util
 if redisdl.py3:
     from io import StringIO, BytesIO
 else:
-    from StringIO import StringIO
+    try:
+        from io import StringIO, BytesIO
+    except ImportError:
+        from StringIO import StringIO, StringIO as BytesIO
 
 
 class ModuleTest(unittest.TestCase):
@@ -111,6 +114,20 @@ class ModuleTest(unittest.TestCase):
         dump = '{"key":{"type":"string","value":"hello, world"}}'
         io = StringIO(dump)
         redisdl.load_lump(io)
+        value = self.r.get('key')
+        self.assertEqual('hello, world', value.decode('ascii'))
+
+    def test_load_stringio_str(self):
+        dump = '{"key":{"type":"string","value":"hello, world"}}'
+        io = StringIO(dump)
+        redisdl.load(io)
+        value = self.r.get('key')
+        self.assertEqual('hello, world', value.decode('ascii'))
+
+    def test_load_stringio_bytes(self):
+        dump = '{"key":{"type":"string","value":"hello, world"}}'
+        io = BytesIO(dump.encode('ascii'))
+        redisdl.load(io)
         value = self.r.get('key')
         self.assertEqual('hello, world', value.decode('ascii'))
 
