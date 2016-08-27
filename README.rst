@@ -7,9 +7,19 @@ redis-dump-load
 Dumps Redis data sets into a format suitable for long-term storage
 (currently JSON) and loads data from such dump files back into Redis.
 
-redis-dump_ was there first, but it is written in Ruby.
+Features
+--------
 
-The output format is intended to be compatible with redis-dump.
+redis-dump-load:
+
+- Supports all Redis data types
+- Dumps TTL and expiration times
+- Can load TTL OR original expiration time for expiring keys
+- Can create pretty/human-readable dumps (keys dumped in sorted order,
+  output indented)
+- Can stream data when dumping and loading
+- Can be used as a module in a larger program or as a standalone utility
+- Uses an output format compatible with redis-dump_
 
 Usage
 -----
