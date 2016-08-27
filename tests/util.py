@@ -88,3 +88,18 @@ def min_redis(*version):
             return fn(self, *args, **kwargs)
         return decorated
     return decorator
+
+def override_default_streaming_backend(streaming_backend):
+    import redisdl
+    
+    def decorator(fn):
+        @functools.wraps(fn)
+        def decorated(*args, **kwargs):
+            old_backend = redisdl.default_streaming_backend
+            redisdl.default_streaming_backend = streaming_backend
+            try:
+                return fn(*args, **kwargs)
+            finally:
+                redisdl.default_streaming_backend = old_backend
+        return decorated
+    return decorator
