@@ -2,20 +2,34 @@ sudo: false
 language: python
 python:
   - "2.6"
-  - "2.7"
   - "3.2"
   - "3.3"
   - "3.4"
-  - "3.5"
 matrix:
   include:
     - python: 2.7
       env: TEST=slow
     - python: 3.5
       env: TEST=slow
+    - python: 2.7
+      env: STREAMING_BACKEND=ijson
+    - python: 2.7
+      env: STREAMING_BACKEND=ijson-yajl
+    - python: 2.7
+      env: STREAMING_BACKEND=ijson-yajl2
+    - python: 2.7
+      env: STREAMING_BACKEND=jsaone
+    - python: 3.5
+      env: STREAMING_BACKEND=ijson
+    - python: 3.5
+      env: STREAMING_BACKEND=ijson-yajl
+    - python: 3.5
+      env: STREAMING_BACKEND=ijson-yajl2
+    - python: 3.5
+      env: STREAMING_BACKEND=jsaone
 services:
   - redis-server
 install: >
-  pip install -r requirements-dev.txt
+  ./tests/travis/setup.sh
 script: >
   ./tests/travis/run.sh
