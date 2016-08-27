@@ -143,18 +143,6 @@ The backend argument takes form of "library-library backend", e.g.:
 - ``yajl2`` means the same things as ``ijson-yajl2`` for compatibility with older redis-dump-load versions.
 - ``jsaone`` selects the jsaone backend.
 
-Note: ijson's yajl2 backend can only decode ``bytes`` instances, not ``str``.
-When loading data from a file opened in text mode and using ijson-yajl2,
-redis-dump-load will encode the file data using utf-8 encoding before
-passing the data to ijson. If this fails, try opening the file/stream in
-binary mode.
-
-Note: jsaone can only decode text strings (``str`` instances), not ``bytes``.
-When loading data from a file opened in binary mode and using jsaone,
-redis-dump-load will decode the file data using the default encoding.
-If this fails, you can change the default encoding or open the files in text
-mode with the encoding appropriately specified in the ``open()`` call.
-
 Note: Streaming loading is substantially slower than lump loading.
 To force lump loading of files, read the files in memory and invoke ``loads``
 rather than ``load``.
@@ -196,6 +184,18 @@ when dumping data from Redis.
 By default redis-dump-load uses utf-8 for encoding and decoding.
 This behavior matches redis-py, whose default encoding is utf-8.
 A different encoding can be specified.
+
+ijson's yajl2 backend can only decode ``bytes`` instances, not ``str``.
+When loading data from a file opened in text mode and using ijson-yajl2,
+redis-dump-load will encode the file data using utf-8 encoding before
+passing the data to ijson. If this fails, try opening the file/stream in
+binary mode.
+
+jsaone can only decode text strings (``str`` instances), not ``bytes``.
+When loading data from a file opened in binary mode and using jsaone,
+redis-dump-load will decode the file data using the default encoding.
+If this fails, you can change the default encoding or open the files in text
+mode with the encoding appropriately specified in the ``open()`` call.
 
 Concurrent Modifications
 ------------------------
