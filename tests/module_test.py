@@ -11,10 +11,12 @@ from . import util
 if redisdl.py3:
     from io import StringIO, BytesIO
 else:
+    from StringIO import StringIO
     try:
-        from io import StringIO, BytesIO
+        from io import BytesIO
     except ImportError:
-        from StringIO import StringIO, StringIO as BytesIO
+        # python 2.6?
+        BytesIO = StringIO
 
 
 class ModuleTest(unittest.TestCase):
