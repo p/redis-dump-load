@@ -162,9 +162,9 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
         type = encoder.encode(type)
         value = encoder.encode(value)
         if ttl:
+            expireat = encoder.encode(_time.time() + ttl)
             ttl = encoder.encode(ttl)
-            expireat = _time.time() + ttl
-            item = '%s:{"type":%s,"value":%s,"ttl":%f,"expireat":%f}' % (
+            item = '%s:{"type":%s,"value":%s,"ttl":%s,"expireat":%s}' % (
                 key, type, value, ttl, expireat)
         else:
             item = '%s:{"type":%s,"value":%s}' % (key, type, value)

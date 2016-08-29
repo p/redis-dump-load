@@ -197,6 +197,21 @@ class ModuleTest(unittest.TestCase):
         self.assertGreaterEqual(actual['a']['expireat'], int(start_time)+3600)
         self.assertLessEqual(actual['a']['expireat'], int(end_time)+1+3600)
 
+    def test_ttl_dump(self):
+        self.r.set('a', 'aaa')
+        self.r.expire('a', 3600)
+
+        start_time = _time.time()
+        fp = StringIO()
+        redisdl.dump(fp, keys='a')
+        end_time = _time.time()
+        actual = json.loads(fp.getvalue())
+
+        self.assertGreater(actual['a']['ttl'], 0)
+        self.assertLessEqual(actual['a']['ttl'], 3600)
+        self.assertGreaterEqual(actual['a']['expireat'], int(start_time)+3600)
+        self.assertLessEqual(actual['a']['expireat'], int(end_time)+1+3600)
+
     def test_ttl_loads(self):
         self.r.delete('b')
         dump = '''{"b":{"type":"string","value":"bbb","ttl":3600}}'''
