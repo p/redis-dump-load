@@ -162,7 +162,6 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
         type = encoder.encode(type)
         value = encoder.encode(value)
         if ttl:
-            ttl = encoder.encode(ttl)
             expireat = _time.time() + ttl
             item = '%s:{"type":%s,"value":%s,"ttl":%f,"expireat":%f}' % (
                 key, type, value, ttl, expireat)
@@ -359,14 +358,14 @@ def ijson_top_level_items(file, local_streaming_backend):
 class TextWrapper(object):
     def __init__(self, fp):
         self.fp = fp
-        
+
     def read(self, *args, **kwargs):
         return self.fp.read(*args, **kwargs).decode()
 
 class BytesWrapper(object):
     def __init__(self, fp):
         self.fp = fp
-        
+
     def read(self, *args, **kwargs):
         return self.fp.read(*args, **kwargs).encode('utf-8')
 
