@@ -279,3 +279,21 @@ class ModuleTest(unittest.TestCase):
         redisdl.loads(dump, use_expireat=True)
         ttl = self.r.ttl('key')
         self.assertGreater(ttl, 36000)
+
+    def test_dump_to_stringio(self):
+        self.r.set('a', 'aaa')
+
+        fp = StringIO()
+        redisdl.dump(fp, keys='a')
+        actual = json.loads(fp.getvalue())
+
+        self.assertEqual(actual['a']['value'], 'aaa')
+
+    def test_dump_to_bytesio(self):
+        self.r.set('a', 'aaa')
+
+        fp = BytesIO()
+        redisdl.dump(fp, keys='a')
+        actual = json.loads(fp.getvalue().decode())
+
+        self.assertEqual(actual['a']['value'], 'aaa')

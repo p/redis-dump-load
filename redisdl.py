@@ -138,8 +138,21 @@ def dumps(host='localhost', port=6379, password=None, db=0, pretty=False,
             subd['expireat'] = _time.time() + ttl
     return encoder.encode(table)
 
+class BytesWriteWrapper(object):
+    def __init__(self, stream):
+        self.stream = stream
+        
+    def write(self, str):
+        return self.stream.write(str.encode())
+
 def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
          unix_socket_path=None, encoding='utf-8', keys='*'):
+    
+    try:
+        fp.write('')
+    except TypeError:
+        fp = BytesWriteWrapper(fp)
+    
     if pretty:
         # hack to avoid implementing pretty printing
         fp.write(dumps(host=host, port=port, password=password, db=db,
@@ -356,14 +369,14 @@ def ijson_top_level_items(file, local_streaming_backend):
     except StopIteration:
         pass
 
-class TextWrapper(object):
+class TextReadWrapper(object):
     def __init__(self, fp):
         self.fp = fp
         
     def read(self, *args, **kwargs):
         return self.fp.read(*args, **kwargs).decode()
 
-class BytesWrapper(object):
+class BytesReadWrapper(object):
     def __init__(self, fp):
         self.fp = fp
         
@@ -394,7 +407,7 @@ def create_loader(fp, streaming_backend=None):
         if not have_ijson:
             raise TypeError('%s backend requested but ijson is not present' % streaming_backend)
         if py3 and isinstance(fp.read(0), str):
-            fp = BytesWrapper(fp)
+            fp = BytesReadWrapper(fp)
         def loader():
             return ijson_top_level_items(fp, option)
     else:
@@ -402,7 +415,7 @@ def create_loader(fp, streaming_backend=None):
             raise TypeError('jsaone backend requested but jsaone is not present')
         if py3 and isinstance(fp.read(0), bytes):
             # jsaone can only process text string data (str), not bytes
-            fp = TextWrapper(fp)
+            fp = TextReadWrapper(fp)
         def loader():
             return jsaone_mod.load(fp)
 
