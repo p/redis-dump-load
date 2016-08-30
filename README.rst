@@ -187,13 +187,22 @@ Unicode
 -------
 
 Redis operates on bytes and has no concept of Unicode or encodings.
-JSON operates on Unicode strings and cannot serialize binary data. Therefore,
+JSON operates on (Unicode) strings and cannot serialize binary data. Therefore,
 redis-dump-load has to encode Unicode strings into byte strings when
 loading data into Redis and decode byte strings into Unicode strings
 when dumping data from Redis.
-By default redis-dump-load uses utf-8 for encoding and decoding.
+By default redis-dump-load uses utf-8 for encoding data sent to Redis
+and decoding data received from Redis.
 This behavior matches redis-py, whose default encoding is utf-8.
 A different encoding can be specified.
+
+``dumps`` returns strings, that is, instances of ``str`` on Python 2
+and instances of ``unicode`` on Python 3.
+
+When dumping to an IO object using ``dump``, and the IO object accepts
+byte strings (such as when a file is opened in binary mode),
+redis-dump-load will ``.encode()`` the dumped data using the default
+encoding in effect.
 
 ijson's yajl2 backend can only decode ``bytes`` instances, not ``str``.
 When loading data from a file opened in text mode and using ijson-yajl2,
