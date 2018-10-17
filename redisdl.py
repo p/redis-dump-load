@@ -156,7 +156,7 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
     if pretty:
         # hack to avoid implementing pretty printing
         fp.write(dumps(host=host, port=port, password=password, db=db,
-            pretty=pretty, encoding=encoding))
+            pretty=pretty, encoding=encoding, keys=keys))
         return
 
     r = client(host=host, port=port, password=password, db=db,
