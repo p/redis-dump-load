@@ -55,12 +55,17 @@ class RedisWrapper(redis.Redis):
     def pttl_or_ttl(self, key):
         if self.have_pttl:
             pttl = self.pttl(key)
-            if pttl is None:
+            if pttl is None or pttl == -1:
                 return None
             else:
                 return float(pttl) / 1000
         else:
-            return self.ttl(key)
+            ttl = self.ttl(key)
+            if ttl is None or ttl == -1:
+                return None
+            else:
+                return ttl
+
 
     def pttl_or_ttl_pipeline(self, p, key):
         if self.have_pttl:
@@ -69,7 +74,7 @@ class RedisWrapper(redis.Redis):
             return p.ttl(key)
 
     def decode_pttl_or_ttl_pipeline_value(self, value):
-        if value is None:
+        if value is None or value == -1:
             return None
         if self.have_pttl:
             return float(value) / 1000
