@@ -176,21 +176,22 @@ def dump(fp, host='localhost', port=6379, password=None, db=0, pretty=False,
     fp.write('{')
     first = True
     for key, type, ttl, value in _reader(r, pretty, encoding, keys):
-        key = encoder.encode(key)
-        type = encoder.encode(type)
-        value = encoder.encode(value)
-        if ttl:
-            expireat = encoder.encode(_time.time() + ttl)
-            ttl = encoder.encode(ttl)
-            item = '%s:{"type":%s,"value":%s,"ttl":%s,"expireat":%s}' % (
-                key, type, value, ttl, expireat)
-        else:
-            item = '%s:{"type":%s,"value":%s}' % (key, type, value)
-        if first:
-            first = False
-        else:
-            fp.write(',')
-        fp.write(item)
+        if type is not None and value is not None:
+            key = encoder.encode(key)
+            type = encoder.encode(type)
+            value = encoder.encode(value)
+            if ttl:
+                expireat = encoder.encode(_time.time() + ttl)
+                ttl = encoder.encode(ttl)
+                item = '%s:{"type":%s,"value":%s,"ttl":%s,"expireat":%s}' % (
+                    key, type, value, ttl, expireat)
+            else:
+                item = '%s:{"type":%s,"value":%s}' % (key, type, value)
+            if first:
+                first = False
+            else:
+                fp.write(',')
+            fp.write(item)
     fp.write('}')
 
 class StringReader(object):
@@ -300,6 +301,10 @@ def _reader(r, pretty, encoding, keys='*'):
             except KeyTypeChangedError:
                 # retry reading type again
                 pass
+            except:
+                # Pass None values since retries are not going to help
+                handled = True
+                yield key, None, None, None
         if not handled:
             # ran out of retries
             raise ConcurrentModificationError('Key %s is being concurrently modified' % key)
@@ -482,6 +487,9 @@ def _writer(r, p, key, type, value, ttl, expireat, use_expireat):
             p.zadd(key, element, score)
     elif type == 'hash':
         p.hmset(key, value)
+    elif type is None:
+        # Ignore None types
+        pass
     else:
         raise UnknownTypeError("Unknown key type: %s" % type)
 
