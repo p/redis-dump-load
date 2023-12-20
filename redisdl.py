@@ -8,6 +8,8 @@ import redis
 import sys
 import time as _time
 import functools
+import syslog
+import ctypes
 
 have_streaming_load = have_ijson = have_jsaone = False
 try:
@@ -31,6 +33,28 @@ if py3:
 else:
     base_exception_class = StandardError
 
+def read_from_file(file_path, target_type=str):
+    """
+    Read content from file and convert to target type
+    :param file_path: File path
+    :param target_type: target type
+    :return: content of the file according the target type.
+    """
+    try:
+        with open(file_path, 'r') as f:
+            value = f.read()
+            if value is None:
+                # None return value is not allowed in any case, so we log error here for further debug.
+                syslog.syslog(syslog.LOG_ERR, 'Failed to read from {}, value is None, errno is {}'.format(file_path, ctypes.get_errno()))
+                # Raise ValueError for the except statement to handle this as a normal exception
+                raise ValueError('File content of {} is None'.format(file_path))
+            else:
+                value = target_type(value.strip())
+    except (ValueError, IOError) as e:
+        syslog.syslog(syslog.LOG_ERR, 'Failed to read from {}, errno is {}'.format(file_path, str(e)))
+
+    return value
+
 class UnknownTypeError(base_exception_class):
     pass
 
@@ -47,6 +71,12 @@ class KeyTypeChangedError(base_exception_class):
 
 class RedisWrapper(redis.Redis):
     def __init__(self, *args, **kwargs):
+        kwargs['username'] = 'admin'
+        kwargs['password'] = read_from_file('/etc/shadow_redis_dir/shadow_redis_admin')
+        redis_shadow_tls_ca="/etc/shadow_redis_dir/certs_redis/ca.crt"
+        kwargs['ssl'] = True
+        kwargs['ssl_cert_reqs'] = None
+        kwargs['ssl_ca_certs'] = redis_shadow_tls_ca
         super(RedisWrapper, self).__init__(*args, **kwargs)
 
         version = [int(part) for part in self.info()['redis_version'].split('.')]
